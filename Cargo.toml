@@ -1,0 +1,62 @@
+[package]
+name = "r_d_inclita_sofware"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+
+
+embassy-stm32 = { version = "0.5.0", features = [
+  "defmt",
+  "stm32f413zh",
+  "unstable-pac",
+  "memory-x",
+  "time-driver-tim4",
+  "exti",
+  "chrono",
+] }
+
+embassy-sync = { version = "0.7.2", features = ["defmt"] }
+
+embassy-executor = { version = "0.9.0", features = [
+  "arch-cortex-m",
+  "executor-thread",
+  "executor-interrupt",
+  "defmt",
+] }
+
+
+embassy-time = { version = "0.5.0", features = [
+  "defmt",
+  "defmt-timestamp-uptime",
+  "tick-hz-32_768",
+] }
+
+
+embassy-usb = { version = "0.5.1", features = ["defmt"] }
+
+embassy-futures = "0.1.2"
+
+
+defmt = "1.0.1"
+defmt-rtt = "1.1.0"
+#cortex-m stuff and hal stuff 
+cortex-m = { version = "0.7.6", features = [
+  "inline-asm",
+  "critical-section-single-core",
+] }
+
+cortex-m-rt = "0.7.5"
+embedded-hal = "1.0.0"
+embedded-hal-bus = { version = "0.3.0", features = ["async"] }
+embedded-io = "0.7.1"
+embedded-io-async = "0.7.0"
+panic-probe = { version = "1.0.0", features = ["print-defmt"] }
+critical-section = "1.2.0"
+panic-halt = "1.0.0"
+
+[profile.release]
+debug = 2
+
+[package.metadata.embassy]
+build = [{ target = "thumbv7em-none-eabihf" }]
