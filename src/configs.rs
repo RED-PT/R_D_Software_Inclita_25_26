@@ -8,11 +8,20 @@
 #![allow(unused_variables)]
 use embassy_stm32::gpio::{Level, Output, Speed};
 use embassy_stm32::i2c::{Config as I2cConfig, I2c};
+use embassy_stm32::interrupt::typelevel::DMA2_STREAM3;
 use embassy_stm32::mode::Blocking;
 use embassy_stm32::sdmmc::{Config as SdmmcConfig, Sdmmc};
 use embassy_stm32::spi::{Config as SpiConfig, Spi};
 use embassy_stm32::usart::{Config as UsartConfig, Uart};
 use embassy_stm32::Peripherals;
+use embassy_stm32::{bind_interrupts, dma, peripherals, sdmmc, Config};
+
+// TODO: sdmmc.rs or something, this is messy
+
+//NVIC and DMA
+bind_interrupts!(struct Irqs {
+    SDIO => sdmmc::InterruptHandler<peripherals::SDIO>;
+});
 
 pub struct Board<'a> {
     pub debug_uart: Uart<'a, Blocking>, //as of now on blocking mode, maybe change this later
@@ -55,10 +64,9 @@ impl Board<'static> {
 
         // SD CARD SDMMC
         let sdmmc_cfg = SdmmcConfig::default();
-        let irq = todo!("Add SDMMC IRQ");
-        let dma = todo!("Add SDMMC DMA");
+
         let sd_card = Sdmmc::new_4bit(
-            p.SDIO, irq, dma, p.PC12, p.PD2, p.PC8, p.PC9, p.PC10, p.PC11, sdmmc_cfg,
+            p.SDIO, Irqs, p.DMA2_CH3, p.PC12, p.PD2, p.PC8, p.PC9, p.PC10, p.PC11, sdmmc_cfg,
         );
 
         Self {
