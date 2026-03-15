@@ -1,5 +1,6 @@
 # We using Rust! How can you Compile and Rust this software?
-See the INSTALL.md file for instructions :).
+Please read [INSTALL.md](/INSTALL.md)  for instructions, from installing rust, to flashing to the board :).
+Also, for more details on  how to use the debugger and related stuff go see  [DEGUB.md](/Debug.md) !
 
 
 This repo contains the pilot experiment for Inclita 25/26, were the avionics software is written in Rust, in order to evaluate Rust as a primary language for mission-critical embedded software sistems. 

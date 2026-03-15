@@ -61,9 +61,4 @@ cargo run --release
 
 
 
-# Software for the Inclita Geração Avionics
-This repo contains the pilot experiment for Inclita 25/26, were the avionics software is written in Rust, in order to evaluate Rust as a primary language for mission-critical embedded software sistems. 
-The [Embassy Framework](https://github.com/embassy-rs/embassy)  was chosen, aiming to achieve high-performance concurrency with significantly lower power consumption and higher memory safety than traditional C-based FreeRTOS approach.
-
-
 
