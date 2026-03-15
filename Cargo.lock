@@ -491,6 +491,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "embedded-fatfs"
+version = "0.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "33c853721b4b95ccb0dd69c3cfed67a5fda3c24535d17027d4e80914d4aaff8d"
+
+[[package]]
 name = "embedded-hal"
 version = "0.2.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -795,6 +801,7 @@ dependencies = [
  "embassy-sync",
  "embassy-time",
  "embassy-usb",
+ "embedded-fatfs",
  "embedded-hal 1.0.0",
  "embedded-hal-bus",
  "embedded-io 0.7.1",

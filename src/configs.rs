@@ -10,12 +10,12 @@ use embassy_stm32::gpio::{Level, Output, Speed};
 use embassy_stm32::i2c::{Config as I2cConfig, I2c};
 use embassy_stm32::interrupt::typelevel::DMA2_STREAM3;
 use embassy_stm32::mode::Blocking;
+use embassy_stm32::rcc::*;
 use embassy_stm32::sdmmc::{Config as SdmmcConfig, Sdmmc};
 use embassy_stm32::spi::{Config as SpiConfig, Spi};
 use embassy_stm32::usart::{Config as UsartConfig, Uart};
 use embassy_stm32::Peripherals;
 use embassy_stm32::{bind_interrupts, dma, peripherals, sdmmc, Config};
-
 // TODO: sdmmc.rs or something, this is messy
 
 //NVIC and DMA
@@ -39,6 +39,31 @@ pub struct Board<'a> {
 }
 
 impl Board<'static> {
+    //we need this because of the sd card
+    pub fn set_clock() -> Config {
+        let mut config = Config::default();
+
+        config.rcc.hse = None; // We dont have an external oscilator
+        config.rcc.hsi = true;
+
+        config.rcc.pll_src = PllSource::HSI;
+
+        // math to suply the sdio with 48mhz
+        config.rcc.pll = Some(Pll {
+            // MATH: HSI is 16 MHz
+            prediv: PllPreDiv::DIV8, // 16 MHz / 8 = 2 MHz (Optimal VCO input)
+            mul: PllMul::MUL192,     // 2 MHz * 192 = 384 MHz (Internal VCO frequency)
+            divp: Some(PllPDiv::DIV4), // 384 MHz / 4 = 96 MHz (Main CPU Clock - Safe!)
+            divq: Some(PllQDiv::DIV8), // 384 MHz / 8 = 48 MHz (Exact SDMMC requirement!)
+            divr: None,
+        });
+        config.rcc.ahb_pre = AHBPrescaler::DIV1;
+        config.rcc.apb1_pre = APBPrescaler::DIV4;
+        config.rcc.apb2_pre = APBPrescaler::DIV2;
+        config.rcc.sys = Sysclk::PLL1_P;
+
+        config
+    }
     pub fn new(p: Peripherals) -> Self {
         let mut debug_uart_cfg = UsartConfig::default();
         debug_uart_cfg.baudrate = 115200;
