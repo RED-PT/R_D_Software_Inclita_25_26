@@ -5,7 +5,6 @@ use crate::configs::Board;
 use defmt::*; // to use debuger shit
 use embassy_executor::Spawner;
 use embassy_stm32::gpio::Output;
-use embassy_stm32::time::Hertz;
 use embassy_stm32::Config;
 use embassy_time::Timer;
 use {defmt_rtt as _, panic_probe as _};
@@ -19,16 +18,19 @@ async fn main(spawner: Spawner) {
 
     {
         use embassy_stm32::rcc::*;
-        config.rcc.hse = Some(Hse {
-            freq: Hertz(8_000_000),
-            mode: HseMode::Bypass,
-        });
-        config.rcc.pll_src = PllSource::HSE;
+
+        config.rcc.hse = None; // We dont have an external oscilator
+        config.rcc.hsi = true;
+
+        config.rcc.pll_src = PllSource::HSI;
+
+        // math to suply the sdio with 48mhz
         config.rcc.pll = Some(Pll {
-            prediv: PllPreDiv::DIV4,
-            mul: PllMul::MUL168,
-            divp: Some(PllPDiv::DIV2), // 8mhz / 4 * 168 / 2 = 168Mhz.
-            divq: Some(PllQDiv::DIV7), // 8mhz / 4 * 168 / 7 = 48Mhz.
+            // MATH: HSI is 16 MHz
+            prediv: PllPreDiv::DIV8, // 16 MHz / 8 = 2 MHz (Optimal VCO input)
+            mul: PllMul::MUL192,     // 2 MHz * 192 = 384 MHz (Internal VCO frequency)
+            divp: Some(PllPDiv::DIV4), // 384 MHz / 4 = 96 MHz (Main CPU Clock - Safe!)
+            divq: Some(PllQDiv::DIV8), // 384 MHz / 8 = 48 MHz (Exact SDMMC requirement!)
             divr: None,
         });
         config.rcc.ahb_pre = AHBPrescaler::DIV1;
