@@ -24,7 +24,7 @@ async fn main(spawner: Spawner) {
         .unwrap();
 
     spawner
-        .spawn(sd_card::test_raw_read(board.sd_card))
+        .spawn(sd_card::test_raw_read(board.sd_spi, board.sd_cs))
         .unwrap();
     board
         .debug_uart

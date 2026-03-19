@@ -1,50 +1,72 @@
-use defmt::{info, Debug2Format};
-use embassy_stm32::sdmmc::sd::{CmdBlock, DataBlock, StorageDevice};
-use embassy_stm32::sdmmc::Sdmmc;
-use embassy_stm32::time::mhz;
+use defmt::{error, info, println};
+use embassy_stm32::gpio::Output;
+use embassy_stm32::mode::Blocking;
+use embassy_stm32::spi::Spi;
+use embassy_time::Delay;
+use embedded_hal_bus::spi::ExclusiveDevice;
+use embedded_sdmmc::Timestamp;
+use embedded_sdmmc::{Error, Mode, SdCard, SdCardError, TimeSource, VolumeIdx, VolumeManager};
 
-const ALLOW_WRITES: bool = false;
-//Initializes the SD card and reads block 0, to verify the hardware and DMA stuff
+// A dummy time source required by embedded-sdmmc
+struct DummyTimesource;
+impl TimeSource for DummyTimesource {
+    fn get_timestamp(&self) -> Timestamp {
+        Timestamp {
+            year_since_1970: 0,
+            zero_indexed_month: 0,
+            zero_indexed_day: 0,
+            hours: 0,
+            minutes: 0,
+            seconds: 0,
+        }
+    }
+}
+
 #[embassy_executor::task]
-pub async fn test_raw_read(mut sdmmc: Sdmmc<'static>) {
-    info!("Starting SD HW initialization");
-    let mut cmd_block = CmdBlock::new();
+pub async fn test_raw_read(
+    spi_bus: Spi<'static, Blocking, embassy_stm32::spi::mode::Master>,
+    cs_pin: Output<'static>,
+) {
+    info!("Starting SD SPI initialization");
 
-    let mut storage = StorageDevice::new_sd_card(&mut sdmmc, &mut cmd_block, mhz(24))
-        .await
+    // Initialize the SD card driver
+    // Delay wrapper is sometimes needed, but for basic embedded-hal blocking SPI,
+    // we can pass the SPI bus, the CS pin, and a standard delay.
+    // Embassy provides a blocking delay via embassy_time::Delay
+    let spi_device = ExclusiveDevice::new(spi_bus, cs_pin, Delay).unwrap();
+
+    let mut sdcard = SdCard::new(spi_device, Delay);
+
+    // Try to get the card size to prove we are talking to it
+    info!("Attempting to initialize card...");
+    match sdcard.num_bytes() {
+        Ok(size) => info!("Card size is {} bytes", size),
+        Err(_) => {
+            error!("Failed to talk to SD Card. Check wiring!");
+            loop {
+                embassy_time::Timer::after_secs(1).await;
+            } // Park safely
+        }
+    }
+    let volume_mgr = VolumeManager::new(sdcard, DummyTimesource);
+    let mut volume0 = match volume_mgr.open_volume(VolumeIdx(0)) {
+        Ok(v) => v,
+        Err(_) => {
+            error!("Failed to open Volume 0. Is it formatted to FAT16/FAT32?");
+            loop {
+                embassy_time::Timer::after_secs(1).await;
+            }
+        }
+    };
+    println!("Volume 0 opened!"); //println!("Volume 0: {:?}", volume0);
+    let root_dir = volume0.open_root_dir().unwrap();
+    let mut my_file = root_dir
+        .open_file_in_dir("MY_FILE.TXT", Mode::ReadOnly)
         .unwrap();
-
-    let card = storage.card();
-
-    info!("Card: {:#?}", Debug2Format(&card));
-
-    // Arbitrary block index
-    let block_idx = 16;
-
-    // SDMMC uses `DataBlock` instead of `&[u8]` to ensure 4 byte alignment required by the hardware.
-    let mut block = DataBlock::new();
-
-    storage.read_block(block_idx, &mut block).await.unwrap();
-    info!("Read: {=[u8]:X}...{=[u8]:X}", block[..8], block[512 - 8..]);
-
-    if !ALLOW_WRITES {
-        info!("Writing is disabled.");
-        panic!("Writing is disabled")
+    while !my_file.is_eof() {
+        let mut buffer = [0u8; 32];
+        let num_read = my_file.read(&mut buffer).unwrap();
     }
 
-    info!("Filling block with 0x55");
-    block.fill(0x55);
-    storage.write_block(block_idx, &block).await.unwrap();
-    info!("Write done");
-
-    storage.read_block(block_idx, &mut block).await.unwrap();
-    info!("Read: {=[u8]:X}...{=[u8]:X}", block[..8], block[512 - 8..]);
-
-    info!("Filling block with 0xAA");
-    block.fill(0xAA);
-    storage.write_block(block_idx, &block).await.unwrap();
-    info!("Write done");
-
-    storage.read_block(block_idx, &mut block).await.unwrap();
-    info!("Read: {=[u8]:X}...{=[u8]:X}", block[..8], block[512 - 8..]);
+    // Read block 0 (the Master Boot Record
 }

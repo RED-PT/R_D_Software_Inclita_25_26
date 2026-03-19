@@ -6,16 +6,17 @@
 #![allow(dead_code)]
 #![allow(unused_imports)]
 #![allow(unused_variables)]
+use embassy_stm32::Peripherals;
 use embassy_stm32::gpio::{Level, Output, Speed};
 use embassy_stm32::i2c::{Config as I2cConfig, I2c};
 use embassy_stm32::interrupt::typelevel::DMA2_STREAM3;
 use embassy_stm32::mode::Blocking;
+use embassy_stm32::pac;
 use embassy_stm32::rcc::*;
 use embassy_stm32::sdmmc::{Config as SdmmcConfig, Sdmmc};
 use embassy_stm32::spi::{Config as SpiConfig, Spi};
 use embassy_stm32::usart::{Config as UsartConfig, Uart};
-use embassy_stm32::Peripherals;
-use embassy_stm32::{bind_interrupts, dma, peripherals, sdmmc, Config};
+use embassy_stm32::{Config, bind_interrupts, dma, peripherals, sdmmc};
 // TODO: sdmmc.rs or something, this is messy
 
 //NVIC and DMA
@@ -27,7 +28,6 @@ pub struct Board<'a> {
     pub debug_uart: Uart<'a, Blocking>, //as of now on blocking mode, maybe change this later
     pub led_mcu_on: Output<'a>,
     pub led_other_function: Output<'a>,
-    pub sd_card: Sdmmc<'a>,
     // I2C expects <Lifetime, Mode, MasterMode>
     pub gyro: I2c<'a, Blocking, embassy_stm32::i2c::Master>, // this will prolly work in blocking,
     // as of now were using bno
@@ -36,6 +36,8 @@ pub struct Board<'a> {
     pub altimeter: Spi<'a, Blocking, embassy_stm32::spi::mode::Master>, //prollly will keep in
     //blocking mode, as of now were using ms
     pub altimeter_cs: Output<'a>,
+    pub sd_spi: Spi<'a, Blocking, embassy_stm32::spi::mode::Master>,
+    pub sd_cs: Output<'a>,
 }
 
 impl Board<'static> {
@@ -85,24 +87,33 @@ impl Board<'static> {
         let spi_cfg = SpiConfig::default();
         let altimeter = Spi::new_blocking(p.SPI1, p.PA5, p.PA7, p.PA6, spi_cfg);
         let altimeter_cs = Output::new(p.PC4, Level::High, Speed::High); //initalized
-                                                                         //to high -> MS inactive
+        //to high -> MS inactive
 
-        // SD CARD SDMMC
-        let sdmmc_cfg = SdmmcConfig::default();
+        // SD CARD SPI
+        let mut sd_spi_cfg = SpiConfig::default();
+        // SD cards usually need to start slow (e.g., 400kHz) for initialization,
+        // the embedded-sdmmc crate handles this, but we'll set a moderate default.
+        sd_spi_cfg.frequency = embassy_stm32::time::mhz(1);
 
-        let sd_card = Sdmmc::new_4bit(
-            p.SDIO, Irqs, p.DMA2_CH3, p.PC12, p.PD2, p.PC8, p.PC9, p.PC10, p.PC11, sdmmc_cfg,
+        let sd_spi = Spi::new_blocking(
+            p.SPI2, p.PD3, // SCK
+            p.PC3, // MOSI
+            p.PC2, // MISO
+            sd_spi_cfg,
         );
 
+        // Chip Select must start HIGH (deselected)
+        let sd_cs = Output::new(p.PG5, Level::High, Speed::High);
         Self {
             debug_uart,
             led_mcu_on,
             led_other_function,
-            sd_card,
             gyro,
             gps_uart,
             altimeter,
             altimeter_cs,
+            sd_spi,
+            sd_cs,
         }
     }
 }
