@@ -4,19 +4,15 @@
 //!
 #![allow(unreachable_code)]
 #![allow(dead_code)]
-#![allow(unused_imports)]
 #![allow(unused_variables)]
 use embassy_stm32::Peripherals;
 use embassy_stm32::gpio::{Level, Output, Speed};
 use embassy_stm32::i2c::{Config as I2cConfig, I2c};
-use embassy_stm32::interrupt::typelevel::DMA2_STREAM3;
 use embassy_stm32::mode::Blocking;
-use embassy_stm32::pac;
 use embassy_stm32::rcc::*;
-use embassy_stm32::sdmmc::{Config as SdmmcConfig, Sdmmc};
 use embassy_stm32::spi::{Config as SpiConfig, Spi};
 use embassy_stm32::usart::{Config as UsartConfig, Uart};
-use embassy_stm32::{Config, bind_interrupts, dma, peripherals, sdmmc};
+use embassy_stm32::{Config, bind_interrupts, peripherals, sdmmc};
 // TODO: sdmmc.rs or something, this is messy
 
 //NVIC and DMA
