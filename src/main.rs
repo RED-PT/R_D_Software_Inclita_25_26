@@ -2,6 +2,7 @@
 #![no_main]
 #![allow(unused_assignments)]
 mod configs;
+mod mock_data;
 mod sd_card;
 use crate::configs::Board;
 use defmt::*; // to use debuger shit
@@ -23,26 +24,18 @@ async fn main(spawner: Spawner) {
         .spawn(another_blinker(board.led_other_function))
         .unwrap();
 
-    spawner
-        .spawn(sd_card::test_raw_read(board.sd_spi, board.sd_cs))
-        .unwrap();
+    //spawner
+    //  .spawn(sd_card::test_raw_read(board.sd_spi, board.sd_cs))
+    //.unwrap();
     board
         .debug_uart
         .blocking_write(b"Hello from STM32!\r\n")
         .unwrap();
-
-    loop {
-        board.debug_uart.blocking_write(b"High!\r\n").unwrap();
-        board.led_mcu_on.set_high();
-        Timer::after_millis(300).await;
-
-        board.debug_uart.blocking_write(b"Low!\r\n").unwrap();
-
-        board.led_mcu_on.set_low();
-        Timer::after_millis(300).await;
-    }
+    spawner.spawn(mock_data::mock_sensor_task()).unwrap();
+    spawner
+        .spawn(sd_card::sd_logger_task(board.sd_spi, board.sd_cs))
+        .unwrap();
 }
-
 #[embassy_executor::task]
 async fn another_blinker(mut led: Output<'static>) {
     loop {
