@@ -25,7 +25,7 @@ pub struct Board<'a> {
     pub led_mcu_on: Output<'a>,
     pub led_other_function: Output<'a>,
     // I2C expects <Lifetime, Mode, MasterMode>
-    pub gyro: I2c<'a, Blocking, embassy_stm32::i2c::Master>, // this will prolly work in blocking,
+    pub imu: I2c<'a, Blocking, embassy_stm32::i2c::Master>, // this will prolly work in blocking,
     // as of now were using bno
     pub gps_uart: Uart<'a, Blocking>, // TODO: Figure out circular DMA, later, i want to have this use Async
     // SPI expects <Lifetime, Mode, CommunicationMode>
@@ -77,7 +77,7 @@ impl Board<'static> {
 
         // GYRO I2C
         let i2c_cfg = I2cConfig::default();
-        let gyro = I2c::new_blocking(p.I2C3, p.PA8, p.PB4, i2c_cfg);
+        let imu = I2c::new_blocking(p.I2C3, p.PA8, p.PB4, i2c_cfg);
 
         // Altimeter SPI
         let spi_cfg = SpiConfig::default();
@@ -104,7 +104,7 @@ impl Board<'static> {
             debug_uart,
             led_mcu_on,
             led_other_function,
-            gyro,
+            imu,
             gps_uart,
             altimeter,
             altimeter_cs,

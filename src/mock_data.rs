@@ -1,10 +1,11 @@
+use defmt::Format;
 use defmt::info;
 use embassy_sync::blocking_mutex::raw::ThreadModeRawMutex;
 use embassy_sync::channel::Channel;
 
 use serde::Serialize;
 //Mock data struct
-#[derive(Clone, Copy, Serialize)]
+#[derive(Format, Serialize)]
 pub struct SensorData {
     pub yaw: f32,
     pub pitch: f32,

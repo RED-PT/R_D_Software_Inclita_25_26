@@ -1,6 +1,7 @@
 #![no_std]
 #![no_main]
 #![allow(unused_assignments)]
+mod bno055;
 mod configs;
 mod mock_data;
 mod sd_card;
@@ -31,9 +32,12 @@ async fn main(spawner: Spawner) {
         .debug_uart
         .blocking_write(b"Hello from STM32!\r\n")
         .unwrap();
-    spawner.spawn(mock_data::mock_sensor_task()).unwrap();
+    //spawner.spawn(mock_data::mock_sensor_task()).unwrap();
     spawner
         .spawn(sd_card::sd_logger_task(board.sd_spi, board.sd_cs))
+        .unwrap();
+    spawner
+        .spawn(bno055::bno055_logger_task(board.imu))
         .unwrap();
 }
 #[embassy_executor::task]

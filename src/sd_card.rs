@@ -157,7 +157,7 @@ pub async fn sd_logger_task(
     loop {
         //WAIT FOR DATA
         let frame: SensorData = DATA_CHANNEL.receive().await;
-        info!("data received from chanel");
+        //  info!("data received from chanel");
 
         // postcard packs the `frame` directly into the `bin_buffer`
         match postcard::to_slice(&frame, &mut bin_buffer) {
