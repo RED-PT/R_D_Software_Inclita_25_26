@@ -4,6 +4,7 @@
 mod bno055;
 mod configs;
 mod mock_data;
+mod ms6507;
 mod sd_card;
 use crate::configs::Board;
 use defmt::*; // to use debuger shit
@@ -38,6 +39,9 @@ async fn main(spawner: Spawner) {
         .unwrap();
     spawner
         .spawn(bno055::bno055_logger_task(board.imu))
+        .unwrap();
+    spawner
+        .spawn(ms6507::ms6507_task(board.altimeter, board.altimeter_cs))
         .unwrap();
 }
 #[embassy_executor::task]

@@ -8,7 +8,7 @@
 use embassy_stm32::Peripherals;
 use embassy_stm32::gpio::{Level, Output, Speed};
 use embassy_stm32::i2c::{Config as I2cConfig, I2c};
-use embassy_stm32::mode::Blocking;
+use embassy_stm32::mode::{Async, Blocking};
 use embassy_stm32::rcc::*;
 use embassy_stm32::spi::{Config as SpiConfig, Spi};
 use embassy_stm32::usart::{Config as UsartConfig, Uart};
@@ -17,8 +17,7 @@ use embassy_stm32::{Config, bind_interrupts, peripherals, sdmmc};
 
 //NVIC and DMA
 bind_interrupts!(struct Irqs {
-    SDIO => sdmmc::InterruptHandler<peripherals::SDIO>;
-});
+    SDIO => sdmmc::InterruptHandler<peripherals::SDIO>;});
 
 pub struct Board<'a> {
     pub debug_uart: Uart<'a, Blocking>, //as of now on blocking mode, maybe change this later
@@ -29,7 +28,7 @@ pub struct Board<'a> {
     // as of now were using bno
     pub gps_uart: Uart<'a, Blocking>, // TODO: Figure out circular DMA, later, i want to have this use Async
     // SPI expects <Lifetime, Mode, CommunicationMode>
-    pub altimeter: Spi<'a, Blocking, embassy_stm32::spi::mode::Master>, //prollly will keep in
+    pub altimeter: Spi<'a, Async, embassy_stm32::spi::mode::Master>, //prollly will keep in
     //blocking mode, as of now were using ms
     pub altimeter_cs: Output<'a>,
     pub sd_spi: Spi<'a, Blocking, embassy_stm32::spi::mode::Master>,
@@ -81,7 +80,7 @@ impl Board<'static> {
 
         // Altimeter SPI
         let spi_cfg = SpiConfig::default();
-        let altimeter = Spi::new_blocking(p.SPI1, p.PA5, p.PA7, p.PA6, spi_cfg);
+        let altimeter = Spi::new(p.SPI1, p.PA5, p.PA7, p.PA6, p.DMA2_CH2, p.DMA2_CH0, spi_cfg);
         let altimeter_cs = Output::new(p.PC4, Level::High, Speed::High); //initalized
         //to high -> MS inactive
 

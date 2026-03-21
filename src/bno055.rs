@@ -1,4 +1,4 @@
-use crate::mock_data::{DATA_CHANNEL, SensorData};
+use crate::mock_data::{DATA_CHANNEL, ImuData, LogEvent};
 use bno055::{BNO055OperationMode, Bno055};
 use defmt::{Debug2Format, error, info};
 use embassy_stm32::i2c::I2c;
@@ -58,21 +58,16 @@ pub async fn bno055_logger_task(i2c_bus: I2c<'static, Blocking, embassy_stm32::i
             z: 0.0,
         });
 
-        let data = SensorData {
+        let data = ImuData {
             yaw,
             pitch,
             roll,
 
             temperature: imu.temperature().unwrap_or(0) as f32,
-            pressure: 0.0,
 
             mag_x: mag.x,
             mag_y: mag.y,
             mag_z: mag.z,
-
-            accel_x: 0.0,
-            accel_y: 0.0,
-            accel_z: 0.0,
 
             gyro_x: gyro.x,
             gyro_y: gyro.y,
@@ -82,14 +77,11 @@ pub async fn bno055_logger_task(i2c_bus: I2c<'static, Blocking, embassy_stm32::i
             lin_accel_e: lin_accel.y,
             lin_accel_d: lin_accel.z,
 
-            lat: 0.0, // Leave GPS blank for now
-            lon: 0.0,
-
             timestamp_ms,
         };
-        info!("Bno055 data {:?}", data);
+        info!("{:?}", data);
         // Send to the SD Card
-        DATA_CHANNEL.send(data).await;
+        DATA_CHANNEL.send(LogEvent::Imu(data)).await;
 
         // Yield back to Embassy
         ticker.next().await;

@@ -1,4 +1,4 @@
-use crate::mock_data::{DATA_CHANNEL, SensorData};
+use crate::mock_data::{DATA_CHANNEL, LogEvent};
 use core::fmt::Write;
 use defmt::{Debug2Format, error, info, println};
 use embassy_stm32::gpio::Output;
@@ -120,19 +120,20 @@ pub async fn sd_logger_task(
 
     // 1. AUTO-INCREMENTING FILE GENERATOR
     let mut file_num = 1;
-    let mut filename: String<16> = String::new();
-
+    let mut imu_filename: String<16> = String::new();
+    let mut baro_filename: String<16> = String::new();
+    info!("seeing which file numbers we're at");
     loop {
-        filename.clear();
-        write!(filename, "DATA{}.BIN", file_num).unwrap();
+        imu_filename.clear();
+        write!(imu_filename, "IMU{}.BIN", file_num).unwrap();
 
-        match root_dir.open_file_in_dir(filename.as_str(), Mode::ReadOnly) {
+        match root_dir.open_file_in_dir(imu_filename.as_str(), Mode::ReadOnly) {
             Ok(existing_file) => {
                 existing_file.close().unwrap_or_default();
                 file_num += 1;
             }
             Err(embedded_sdmmc::Error::NotFound) => {
-                info!("Found empty slot! Logging to: {}", filename.as_str());
+                info!("Found empty slot! Logging to: {}", imu_filename.as_str());
                 break;
             }
             Err(e) => {
@@ -143,41 +144,65 @@ pub async fn sd_logger_task(
             }
         }
     }
-
-    let mut data_file = root_dir
-        .open_file_in_dir(filename.as_str(), Mode::ReadWriteCreateOrAppend)
+    write!(baro_filename, "BARO_{}.BIN", file_num).unwrap();
+    let mut imu_file = root_dir
+        .open_file_in_dir(imu_filename.as_str(), Mode::ReadWriteCreateOrAppend)
+        .unwrap();
+    let mut baro_file = root_dir
+        .open_file_in_dir(baro_filename.as_str(), Mode::ReadWriteCreateOrAppend)
         .unwrap();
     info!("Starting Binary Data Logging!");
 
-    const BURST_SIZE: u32 = 20;
-    let mut burst_counter = 0;
-
+    const BURST_SIZE: u32 = 30;
+    let mut imu_burst_counter = 0;
+    let mut baro_burst_counter = 0;
     let mut bin_buffer = [0u8; 128];
 
     loop {
         //WAIT FOR DATA
-        let frame: SensorData = DATA_CHANNEL.receive().await;
+        let frame: LogEvent = DATA_CHANNEL.receive().await;
         //  info!("data received from chanel");
 
         // postcard packs the `frame` directly into the `bin_buffer`
-        match postcard::to_slice(&frame, &mut bin_buffer) {
-            Ok(serialized_bytes) => {
-                // serialized_bytes is exactly the length of the valid data
-                if let Err(e) = data_file.write(serialized_bytes) {
-                    error!("Write failed! {:?}", Debug2Format(&e));
+        match frame {
+            LogEvent::Imu(imu_data) => {
+                if let Ok(bytes) = postcard::to_slice(&imu_data, &mut bin_buffer) {
+                    if let Err(_e) = imu_file.write(bytes) {
+                        error!("IMU Write failed!");
+                    }
+                }
+
+                imu_burst_counter += 1;
+
+                // FLUSH IMU FILE
+                if imu_burst_counter >= BURST_SIZE {
+                    imu_file.close().unwrap_or_default();
+                    // Re-open using our dynamic filename string!
+                    imu_file = root_dir
+                        .open_file_in_dir(imu_filename.as_str(), Mode::ReadWriteCreateOrAppend)
+                        .unwrap();
+                    imu_burst_counter = 0;
                 }
             }
-            Err(_) => error!("Failed to serialize data!"),
-        }
+            LogEvent::Baro(baro_data) => {
+                if let Ok(bytes) = postcard::to_slice(&baro_data, &mut bin_buffer) {
+                    if let Err(_e) = baro_file.write(bytes) {
+                        error!("Baro Write failed!");
+                    }
+                }
 
-        burst_counter += 1;
+                baro_burst_counter += 1;
 
-        if burst_counter >= BURST_SIZE {
-            data_file.close().unwrap_or_default();
-            burst_counter = 0;
-            data_file = root_dir
-                .open_file_in_dir(filename.as_str(), Mode::ReadWriteCreateOrAppend)
-                .unwrap();
+                // FLUSH IMU FILE
+                if baro_burst_counter >= BURST_SIZE {
+                    baro_file.close().unwrap_or_default();
+                    // Re-open using our dynamic filename string!
+                    baro_file = root_dir
+                        .open_file_in_dir(baro_filename.as_str(), Mode::ReadWriteCreateOrAppend)
+                        .unwrap();
+                    baro_burst_counter = 0;
+                }
+            }
         }
     }
 }
