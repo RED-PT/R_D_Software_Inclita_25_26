@@ -16,7 +16,18 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
-    - name: Build
-      run: cargo build --verbose
-    - name: Run tests
-      run: cargo test --verbose
+    # This is the magic step for embedded Rust!
+      # It installs the compiler and the specific architecture target for your STM32.
+    - name: Install Rust Toolchain
+      uses: dtolnay/rust-toolchain@stable
+      with:
+        targets: thumbv7em-none-eabihf 
+
+      # Caching speeds up your workflow by saving downloaded crates between runs
+    - name: Setup Rust Cache
+      uses: Swatinem/rust-cache@v2
+
+      # The actual build command.
+      # If you have a .cargo/config.toml setting your default target, this is all you need!
+    - name: Check Build (Release)
+      run: cargo build --release

@@ -8,16 +8,24 @@ The [Embassy Framework](https://github.com/embassy-rs/embassy)  was chosen, aimi
 
 
 
-## The hardware
+## Key Features
 
-The software is built for the STM32F413ZH (Cortex-M4F). Unlike traditional "Super Loop" or threaded RTOS architectures, this project uses an [Async/Wait](https://rust-lang.github.io/async-book/) [Executor](https://embassy.dev/book/#_embassy_executor) , allowing peripherals to wait for hardware events without blocking the CPU.
+- The software is built for the STM32F413ZH (Cortex-M4F). Unlike traditional "Super Loop" or threaded RTOS architectures, this project uses an [Async/Wait](https://rust-lang.github.io/async-book/) [Executor](https://embassy.dev/book/#_embassy_executor) , allowing peripherals to wait for hardware events without blocking the CPU.
 
-### Hardware Drivers we are aiming for:
-1. SDMMC: 4-bit wide bus configuration.
-2. UART: Debug logging via USART3 (algo we can just for using the debuger, and get debug messages via the `info!()` macro) and GPS integration via UART5.
-3. I2C: Configured for IMU data acquisition.
-4. SPI: Dedicated bus for Altimeter sensor.
+- Thread-Safe Data Pipelines: Uses [embassy_sync::Chanel](https://docs.embassy.dev/embassy-sync/0.7.2/default/channel/struct.Channel.html) to safely pass data between the sensor polling task and the slower SD card writing task.
 
+- Serialization: Uses [postcard](https://docs.rs/postcard/latest/postcard/)  and [Serde](https://crates.io/crates/serde)  to pack data structs directly into raw bytes (no_std compatible).
+
+- File Generation: Scans the SD card on boot and creates sequential, non-destructive log files (e.g., DATA1.BIN, DATA2.BIN).
+
+## Hardware:
+| Peripheral | Component | Protocol | MCU Pins (Example) |
+| :--- | :--- | :--- | :--- |
+| **Debug Console** | UART to USB | USART3 | TX: PD8, RX: PD9 |
+| **IMU** | BNO055 | I2C1 (Blocking) | SCL: PA8, SDA: PB4 |
+| **Storage** | MicroSD Card | SPI2 | SCK: PD3, MOSI: PC3, MISO: PC2, CS: PG5 |
+| **Altimeter** | MS5611 (Planned) | SPI1 | SCK: PA5, MOSI: PA7, MISO: PA6, CS: PC4 |
+| **GPS** | NEO-6M (Planned) | UART5 | TX: PB12, RX: PB13 |
 
 
 ## Project Structure (as of now)
@@ -25,18 +33,21 @@ The software is built for the STM32F413ZH (Cortex-M4F). Unlike traditional "Supe
 
 `configs.rs`: Our "Hardware Abstraction Layer" (HAL) wrapper. It acts similarly to a C config.h, centralizing pin assignments, clock trees, and peripheral ownership in a Board struct.
 
-`sd_card.rs`: Low-level SDMMC test function to verify DMA transfers and raw block storage.
+`sd_card.rs`: Code to comunicate to the sd card using SPI, we test function to verify storage, and our `sd_logger_task`. To lower the numbers of file openings and closings and actually save data, the file is automatically closed and re-opened (flushing the buffer) every 20 frames (`BURST_SIZE`).
+
+`bno055.rs`: A `Ticker` guarantees polling at 100Hz. It reads I2C data from the BNO055, extracts the floats, and packs them into a SensorData struct.
 
 ## Roadmap
 [x] Basic async executor and GPIO blinking.
 
-[x] SDMMC Raw block read/write verification.
+[x] SD CARD use via SPI
+[] Switch from SPI to SDMMC
 
 [ ] Transition GPS UART to Circular DMA with Async support.
 
-[ ] Implement embedded-fatfs for high-level file system access on the SD card.
+[x] Implement high-level file system access on the SD card.
 
-[ ] Get IMU data via polling.
+[x ] Get IMU data via polling.
 
 [ ] Store flight data in the SD Card.
 
