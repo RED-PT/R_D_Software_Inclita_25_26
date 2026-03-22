@@ -13,7 +13,7 @@ struct DummyTimesource;
 impl TimeSource for DummyTimesource {
     fn get_timestamp(&self) -> Timestamp {
         Timestamp {
-            year_since_1970: 0,
+            year_since_1970: 200,
             zero_indexed_month: 0,
             zero_indexed_day: 0,
             hours: 0,

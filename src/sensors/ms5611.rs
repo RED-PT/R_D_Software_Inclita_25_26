@@ -8,7 +8,7 @@ use embedded_hal_bus::spi::ExclusiveDevice;
 use ms5611_rs::{Ms5611, Oversampling};
 
 #[embassy_executor::task]
-pub async fn ms6507_task(
+pub async fn ms5611_task(
     spi_bus: Spi<'static, embassy_stm32::mode::Async, embassy_stm32::spi::mode::Master>,
     cs_pin: Output<'static>,
 ) {

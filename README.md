@@ -29,29 +29,32 @@ The [Embassy Framework](https://github.com/embassy-rs/embassy)  was chosen, aimi
 
 
 ## Project Structure (as of now)
+```
 src/
-├── `main.rs`           // The async entry point: handles embassy executor and hardware init and spawns tasks
-├── `hardware_cfd.rs`   // (Formerly configs.rs) Handles clocks, pins, and HAL init
-├── `telemetry.rs`      // (Formerly mock_data.rs) Defines structs, enums, and channels
-├── sensors/          // A folder dedicated to reading data
-│   ├── `mod.rs`        // Exposes the sensor modules to the rest of the app
-│   ├── `bno055.rs`     // The IMU task (polling)
-│   └── `ms5611.rs`     // (Formerly ms6507.rs) The Altimeter task (async)
-└── storage/          // A folder dedicated to saving/sending data
-    ├── `mod.rs`        // Exposes the storage modules
-    └── `sd_card.rs`    // The SD card task (writting in bursts)
-
+├── main.rs            // Async entry point: embassy executor, hw init, & task spawning
+├── hardware_cfd.rs    // Handles clocks, pins, and HAL init
+├── telemetry.rs       // Defines structs, enums, and channels
+├── sensors/           // Reading sensor data   
+│   ├── mod.rs         // Exposes sensor modules
+    |-- mock.rs        // mock of the sensors
+│   ├── bno055.rs      // IMU task (polling)
+│   └── ms5611.rs      // Altimeter task (async)
+      
+└── storage/           // Saving/sending data
+    ├── mod.rs         // Exposes storage modules 
+    └── sd_card.rs     // SD card task (writing in bursts)
+```
 ## Roadmap
-([x]) Basic async executor and GPIO blinking.
+- [x] Basic async executor and GPIO blinking.
 
-([x]) SD CARD use via SPI
-([ ]) Switch from SPI to SDMMC
+- [x] SD CARD use via SPI
+- [ ] Switch from SPI to SDMMC
 
-([ ]) Transition GPS UART to Circular DMA with Async support.
+- [ ] Transition GPS UART to Circular DMA with Async support.
 
-([x]) Implement high-level file system access on the SD card.
+- [x] Implement high-level file system access on the SD card.
 
-([x]) Get IMU data via polling.
+- [x] Get IMU data via polling.
 
-([ ]) Store flight data in the SD Card.
-
+- [ ] Store flight data in the SD Card.
+ 

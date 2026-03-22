@@ -1,5 +1,4 @@
 use defmt::Format;
-use defmt::info;
 use embassy_sync::blocking_mutex::raw::ThreadModeRawMutex;
 use embassy_sync::channel::Channel;
 
@@ -27,30 +26,6 @@ pub struct AltimeterData {
     pub pressure: f32,
     pub altitude: f32,
     pub temperature: f32,
-    pub timestamp_ms: u32,
-}
-
-#[derive(Format, Serialize)]
-pub struct SensorData {
-    pub yaw: f32,
-    pub pitch: f32,
-    pub roll: f32,
-    pub temperature: f32,
-    pub pressure: f32,
-    pub mag_x: f32,
-    pub mag_y: f32,
-    pub mag_z: f32,
-    pub accel_x: f32,
-    pub accel_y: f32,
-    pub accel_z: f32,
-    pub gyro_x: f32,
-    pub gyro_y: f32,
-    pub gyro_z: f32,
-    pub lin_accel_n: f32,
-    pub lin_accel_e: f32,
-    pub lin_accel_d: f32,
-    pub lat: f32,
-    pub lon: f32,
     pub timestamp_ms: u32,
 }
 

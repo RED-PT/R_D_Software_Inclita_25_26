@@ -67,5 +67,10 @@ ms5611-rs = "0.1.1"
 [profile.release]
 debug = 2
 
+
+[features]
+default = []
+mock-sensors = [] # Builds the mock version were we send the mock data
+
 [package.metadata.embassy]
 build = [{ target = "thumbv7em-none-eabihf" }]

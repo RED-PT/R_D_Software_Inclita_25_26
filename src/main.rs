@@ -36,15 +36,27 @@ async fn main(spawner: Spawner) {
     spawner
         .spawn(storage::sd_card::sd_logger_task(board.sd_spi, board.sd_cs))
         .unwrap();
-    spawner
-        .spawn(sensors::bno055::bno055_logger_task(board.imu))
-        .unwrap();
-    spawner
-        .spawn(sensors::ms5611::ms6507_task(
-            board.altimeter,
-            board.altimeter_cs,
-        ))
-        .unwrap();
+    #[cfg(not(feature = "mock-sensors"))]
+    {
+        info!("Compiling in FLIGHT MODE");
+        spawner
+            .spawn(sensors::bno055::bno055_logger_task(board.imu))
+            .unwrap();
+        spawner
+            .spawn(sensors::ms5611::ms5611_task(
+                board.altimeter,
+                board.altimeter_cs,
+            ))
+            .unwrap();
+    }
+
+    // --- TEST MODE: Mock Sensors ---
+    #[cfg(feature = "mock-sensors")]
+    {
+        info!("Compiling in TEST MODE");
+        spawner.spawn(sensors::mock::mock_imu_task()).unwrap();
+        spawner.spawn(sensors::mock::mock_baro_task()).unwrap();
+    }
 }
 #[embassy_executor::task]
 async fn another_blinker(mut led: Output<'static>) {
