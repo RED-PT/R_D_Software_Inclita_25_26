@@ -165,6 +165,7 @@ pub async fn sd_logger_task(
 
         // postcard packs the `frame` directly into the `bin_buffer`
         match frame {
+            LogEvent::GPS(_) => todo!(),
             LogEvent::Imu(imu_data) => {
                 if let Ok(bytes) = postcard::to_slice(&imu_data, &mut bin_buffer) {
                     if let Err(_e) = imu_file.write(bytes) {

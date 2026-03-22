@@ -12,12 +12,15 @@ use embassy_stm32::mode::{Async, Blocking};
 use embassy_stm32::rcc::*;
 use embassy_stm32::spi::{Config as SpiConfig, Spi};
 use embassy_stm32::usart::{Config as UsartConfig, Uart};
-use embassy_stm32::{Config, bind_interrupts, peripherals, sdmmc};
+use embassy_stm32::{Config, bind_interrupts, peripherals, sdmmc, usart};
 // TODO: sdmmc.rs or something, this is messy
 
 //NVIC and DMA
 bind_interrupts!(struct Irqs {
-    SDIO => sdmmc::InterruptHandler<peripherals::SDIO>;});
+    SDIO => sdmmc::InterruptHandler<peripherals::SDIO>;
+    UART5 => usart::InterruptHandler<peripherals::UART5>;
+
+});
 
 pub struct Board<'a> {
     pub debug_uart: Uart<'a, Blocking>, //as of now on blocking mode, maybe change this later
@@ -26,7 +29,7 @@ pub struct Board<'a> {
     // I2C expects <Lifetime, Mode, MasterMode>
     pub imu: I2c<'a, Blocking, embassy_stm32::i2c::Master>, // this will prolly work in blocking,
     // as of now were using bno
-    pub gps_uart: Uart<'a, Blocking>, // TODO: Figure out circular DMA, later, i want to have this use Async
+    pub gps_uart: Uart<'a, Async>,
     // SPI expects <Lifetime, Mode, CommunicationMode>
     pub altimeter: Spi<'a, Async, embassy_stm32::spi::mode::Master>, //prollly will keep in
     //blocking mode, as of now were using ms
@@ -72,7 +75,16 @@ impl Board<'static> {
         // GPS UART
         let mut gps_uart_cfg = UsartConfig::default();
         gps_uart_cfg.baudrate = 38400;
-        let gps_uart = Uart::new_blocking(p.UART5, p.PB12, p.PB13, gps_uart_cfg).unwrap();
+        let gps_uart = Uart::new(
+            p.UART5,
+            p.PB12,
+            p.PB13,
+            Irqs,
+            p.DMA1_CH7,
+            p.DMA1_CH0,
+            gps_uart_cfg,
+        )
+        .unwrap();
 
         // GYRO I2C
         let i2c_cfg = I2cConfig::default();
