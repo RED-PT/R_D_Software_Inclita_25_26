@@ -1,6 +1,6 @@
 # We using Rust! How can you Compile and Rust this software?
 Please read [INSTALL.md](/INSTALL.md)  for instructions, from installing rust, to flashing to the board :).
-Also, for more details on  how to use the debugger and related stuff go see  [DEGUB.md](/Debug.md) !
+Also, for more details on  how to use the debugger and related stuff go see  [DEBUG.md](/DEBUG.md) !
 
 
 This repo contains the pilot experiment for Inclita 25/26, were the avionics software is written in Rust, in order to evaluate Rust as a primary language for mission-critical embedded software sistems. 
@@ -29,25 +29,29 @@ The [Embassy Framework](https://github.com/embassy-rs/embassy)  was chosen, aimi
 
 
 ## Project Structure (as of now)
-`main.rs`: The async entry point. It handles the Embassy executor initialization and spawns concurrent tasks like blinkers and sensor polling.
-
-`configs.rs`: Our "Hardware Abstraction Layer" (HAL) wrapper. It acts similarly to a C config.h, centralizing pin assignments, clock trees, and peripheral ownership in a Board struct.
-
-`sd_card.rs`: Code to comunicate to the sd card using SPI, we test function to verify storage, and our `sd_logger_task`. To lower the numbers of file openings and closings and actually save data, the file is automatically closed and re-opened (flushing the buffer) every 20 frames (`BURST_SIZE`).
-
-`bno055.rs`: A `Ticker` guarantees polling at 100Hz. It reads I2C data from the BNO055, extracts the floats, and packs them into a SensorData struct.
+src/
+├── `main.rs`           // The async entry point: handles embassy executor and hardware init and spawns tasks
+├── `hardware_cfd.rs`   // (Formerly configs.rs) Handles clocks, pins, and HAL init
+├── `telemetry.rs`      // (Formerly mock_data.rs) Defines structs, enums, and channels
+├── sensors/          // A folder dedicated to reading data
+│   ├── `mod.rs`        // Exposes the sensor modules to the rest of the app
+│   ├── `bno055.rs`     // The IMU task (polling)
+│   └── `ms5611.rs`     // (Formerly ms6507.rs) The Altimeter task (async)
+└── storage/          // A folder dedicated to saving/sending data
+    ├── `mod.rs`        // Exposes the storage modules
+    └── `sd_card.rs`    // The SD card task (writting in bursts)
 
 ## Roadmap
-[x] Basic async executor and GPIO blinking.
+([x]) Basic async executor and GPIO blinking.
 
-[x] SD CARD use via SPI
-[] Switch from SPI to SDMMC
+([x]) SD CARD use via SPI
+([ ]) Switch from SPI to SDMMC
 
-[ ] Transition GPS UART to Circular DMA with Async support.
+([ ]) Transition GPS UART to Circular DMA with Async support.
 
-[x] Implement high-level file system access on the SD card.
+([x]) Implement high-level file system access on the SD card.
 
-[x ] Get IMU data via polling.
+([x]) Get IMU data via polling.
 
-[ ] Store flight data in the SD Card.
+([ ]) Store flight data in the SD Card.
 

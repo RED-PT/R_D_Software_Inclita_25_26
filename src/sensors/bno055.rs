@@ -1,4 +1,4 @@
-use crate::mock_data::{DATA_CHANNEL, ImuData, LogEvent};
+use crate::telemetry::{DATA_CHANNEL, ImuData, LogEvent};
 use bno055::{BNO055OperationMode, Bno055};
 use defmt::{Debug2Format, error, info};
 use embassy_stm32::i2c::I2c;

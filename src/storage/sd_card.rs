@@ -1,4 +1,4 @@
-use crate::mock_data::{DATA_CHANNEL, LogEvent};
+use crate::telemetry::{DATA_CHANNEL, LogEvent};
 use core::fmt::Write;
 use defmt::{Debug2Format, error, info, println};
 use embassy_stm32::gpio::Output;

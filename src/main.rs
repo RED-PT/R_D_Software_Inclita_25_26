@@ -1,12 +1,11 @@
 #![no_std]
 #![no_main]
 #![allow(unused_assignments)]
-mod bno055;
-mod configs;
-mod mock_data;
-mod ms6507;
-mod sd_card;
-use crate::configs::Board;
+mod hardware_cfg;
+mod sensors;
+mod storage;
+mod telemetry;
+use crate::hardware_cfg::Board;
 use defmt::*; // to use debuger shit
 use embassy_executor::Spawner;
 use embassy_stm32::gpio::Output;
@@ -35,13 +34,16 @@ async fn main(spawner: Spawner) {
         .unwrap();
     //spawner.spawn(mock_data::mock_sensor_task()).unwrap();
     spawner
-        .spawn(sd_card::sd_logger_task(board.sd_spi, board.sd_cs))
+        .spawn(storage::sd_card::sd_logger_task(board.sd_spi, board.sd_cs))
         .unwrap();
     spawner
-        .spawn(bno055::bno055_logger_task(board.imu))
+        .spawn(sensors::bno055::bno055_logger_task(board.imu))
         .unwrap();
     spawner
-        .spawn(ms6507::ms6507_task(board.altimeter, board.altimeter_cs))
+        .spawn(sensors::ms5611::ms6507_task(
+            board.altimeter,
+            board.altimeter_cs,
+        ))
         .unwrap();
 }
 #[embassy_executor::task]

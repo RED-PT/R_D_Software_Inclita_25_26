@@ -1,4 +1,4 @@
-use crate::mock_data::{AltimeterData, DATA_CHANNEL, LogEvent};
+use crate::telemetry::{AltimeterData, DATA_CHANNEL, LogEvent};
 
 use defmt::{error, info};
 use embassy_stm32::gpio::Output;
@@ -9,7 +9,6 @@ use ms5611_rs::{Ms5611, Oversampling};
 
 #[embassy_executor::task]
 pub async fn ms6507_task(
-    // Notice we are demanding an Async SPI bus here, not Blocking!
     spi_bus: Spi<'static, embassy_stm32::mode::Async, embassy_stm32::spi::mode::Master>,
     cs_pin: Output<'static>,
 ) {
