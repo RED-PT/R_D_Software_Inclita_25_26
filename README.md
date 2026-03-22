@@ -6,6 +6,8 @@ Also, for more details on  how to use the debugger and related stuff go see  [DE
 This repo contains the pilot experiment for Inclita 25/26, were the avionics software is written in Rust, in order to evaluate Rust as a primary language for mission-critical embedded software sistems. 
 The [Embassy Framework](https://github.com/embassy-rs/embassy)  was chosen, aiming to achieve high-performance concurrency with significantly lower power consumption and higher memory safety than traditional C-based FreeRTOS approach.
 
+Rust was chosen also because of being easy to deploy testing and mocks, to see how testing is being implemented, please see [TESTING.md](/TESTING.md) 
+
 
 
 ## Key Features
