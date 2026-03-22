@@ -31,20 +31,21 @@ Rust was chosen also because of being easy to deploy testing and mocks, to see h
 
 
 ## Project Structure (as of now)
+
 ```
-src/
-├── main.rs            // Async entry point: embassy executor, hw init, & task spawning
-├── hardware_cfd.rs    // Handles clocks, pins, and HAL init
-├── telemetry.rs       // Defines structs, enums, and channels
-├── sensors/           // Reading sensor data   
-│   ├── mod.rs         // Exposes sensor modules
-    |-- mock.rs        // mock of the sensors
-│   ├── bno055.rs      // IMU task (polling)
-│   └── ms5611.rs      // Altimeter task (async)
-      
-└── storage/           // Saving/sending data
-    ├── mod.rs         // Exposes storage modules 
-    └── sd_card.rs     // SD card task (writing in bursts)
+
+├── hardware_cfg.rs
+├── main.rs //entry point of the flight software: initializes the STM32 hardware and uses the Embassy executor to spawn all asynchronous tasks.
+├── sensors //Hardware Abstraction Layer (HAL) configs: setting up the system clocks, binding interrupts, initializing the peripherals (SPI, I2C, UART, DMA)
+│   ├── bno055.rs //(IMU) driver. Runs a 100Hz asynchronous loop over I2C
+│   ├── gps.rs //Circular DMA and UART IDLE Line Detection  tocapture and parse 5Hz NMEA $GNGGA bursts.
+│   ├── mock.rs // For future use in SIL (software In the Loop)
+│   ├── mod.rs
+│   └── ms5611.rs //50Hz asynchronous loop over SPI to read pressure and temperature
+├── storage
+│   ├── mod.rs
+│   └── sd_card.rs //Uses SPI to interface with the SD card's FAT file system. It finds the empty file slots (e.g., IMU_1.BIN, BARO_1.BIN) and acts as a mail-sorter, grabbing LogEvent packets from the telemetry channel, serializing them into binary using postcard, and safely executing burst-writes.
+└── telemetry.rs //All serde-derivable data structures, the LogEvent enum, the asynchronous Channel to pass data safely between the sensor tasks and SD card task.
 ```
 ## Roadmap
 - [x] Basic async executor and GPIO blinking.

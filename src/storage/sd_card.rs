@@ -122,6 +122,7 @@ pub async fn sd_logger_task(
     let mut file_num = 1;
     let mut imu_filename: String<16> = String::new();
     let mut baro_filename: String<16> = String::new();
+    let mut gps_filename: String<16> = String::new();
     info!("seeing which file numbers we're at");
     loop {
         imu_filename.clear();
@@ -145,17 +146,23 @@ pub async fn sd_logger_task(
         }
     }
     write!(baro_filename, "BARO_{}.BIN", file_num).unwrap();
+    write!(gps_filename, "GPS_{}.BIN", file_num).unwrap();
     let mut imu_file = root_dir
         .open_file_in_dir(imu_filename.as_str(), Mode::ReadWriteCreateOrAppend)
         .unwrap();
     let mut baro_file = root_dir
         .open_file_in_dir(baro_filename.as_str(), Mode::ReadWriteCreateOrAppend)
         .unwrap();
+    let mut gps_file = root_dir
+        .open_file_in_dir(gps_filename.as_str(), Mode::ReadWriteCreateOrAppend)
+        .unwrap();
+
     info!("Starting Binary Data Logging!");
 
     const BURST_SIZE: u32 = 30;
     let mut imu_burst_counter = 0;
     let mut baro_burst_counter = 0;
+    let mut gps_burst_counter = 0;
     let mut bin_buffer = [0u8; 128];
 
     loop {
@@ -165,7 +172,21 @@ pub async fn sd_logger_task(
 
         // postcard packs the `frame` directly into the `bin_buffer`
         match frame {
-            LogEvent::GPS(_) => todo!(),
+            LogEvent::GPS(gps_data) => {
+                if let Ok(bytes) = postcard::to_slice(&gps_data, &mut bin_buffer) {
+                    if let Err(_e) = gps_file.write(bytes) {
+                        error!("GPS file write failed");
+                    }
+                }
+                gps_burst_counter += 1;
+
+                if gps_burst_counter >= BURST_SIZE {
+                    gps_file.close().unwrap_or_default();
+                    gps_file = root_dir
+                        .open_file_in_dir(gps_filename.as_str(), Mode::ReadWriteCreateOrAppend)
+                        .unwrap();
+                }
+            }
             LogEvent::Imu(imu_data) => {
                 if let Ok(bytes) = postcard::to_slice(&imu_data, &mut bin_buffer) {
                     if let Err(_e) = imu_file.write(bytes) {
