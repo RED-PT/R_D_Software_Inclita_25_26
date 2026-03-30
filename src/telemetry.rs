@@ -3,7 +3,17 @@ use embassy_sync::blocking_mutex::raw::ThreadModeRawMutex;
 use embassy_sync::channel::Channel;
 use heapless::String;
 use serde::Serialize;
-//Mock data struct
+
+///Magnetometer data structure
+#[derive(Format, Serialize)]
+pub struct MagnetometerData {
+    pub mag_x: f32,
+    pub mag_y: f32,
+    pub mag_z: f32,
+    pub timestamp_ms: u32,
+}
+
+/// IMUN DAta struct to use
 #[derive(Format, Serialize)]
 pub struct ImuData {
     pub yaw: f32,
@@ -89,7 +99,8 @@ pub enum LogEvent {
     Imu(ImuData),
     Baro(AltimeterData),
     GPS(GnggaMessage),
+    Mag(MagnetometerData),
 }
 //The Channel (Our FreeRTOS StreamBuffer equivalent)
 // the channel can hold up to 25 readings before the mock feeder has to wait.
-pub static DATA_CHANNEL: Channel<ThreadModeRawMutex, LogEvent, 50> = Channel::new();
+pub static DATA_CHANNEL: Channel<ThreadModeRawMutex, LogEvent, 100> = Channel::new();

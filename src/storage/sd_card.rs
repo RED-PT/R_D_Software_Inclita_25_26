@@ -97,7 +97,7 @@ pub async fn test_raw_read(
     // Read block 0 (the Master Boot Record
 }
 
-type MyVolumeManager<D, T> = VolumeManager<D, T, 4, 4, 4>;
+type MyVolumeManager<D, T> = VolumeManager<D, T, 4, 4, 6>;
 
 #[embassy_executor::task]
 pub async fn sd_logger_task(
@@ -123,6 +123,7 @@ pub async fn sd_logger_task(
     let mut imu_filename: String<16> = String::new();
     let mut baro_filename: String<16> = String::new();
     let mut gps_filename: String<16> = String::new();
+    let mut mag_filename: String<16> = String::new();
     info!("seeing which file numbers we're at");
     loop {
         imu_filename.clear();
@@ -147,6 +148,7 @@ pub async fn sd_logger_task(
     }
     write!(baro_filename, "BARO_{}.BIN", file_num).unwrap();
     write!(gps_filename, "GPS_{}.BIN", file_num).unwrap();
+    write!(mag_filename, "MAG_{}.BIN", file_num).unwrap();
     let mut imu_file = root_dir
         .open_file_in_dir(imu_filename.as_str(), Mode::ReadWriteCreateOrAppend)
         .unwrap();
@@ -156,6 +158,9 @@ pub async fn sd_logger_task(
     let mut gps_file = root_dir
         .open_file_in_dir(gps_filename.as_str(), Mode::ReadWriteCreateOrAppend)
         .unwrap();
+    let mut mag_file = root_dir
+        .open_file_in_dir(mag_filename.as_str(), Mode::ReadWriteCreateOrAppend)
+        .unwrap();
 
     info!("Starting Binary Data Logging!");
 
@@ -163,6 +168,7 @@ pub async fn sd_logger_task(
     let mut imu_burst_counter = 0;
     let mut baro_burst_counter = 0;
     let mut gps_burst_counter = 0;
+    let mut mag_burst_counter = 0;
     let mut bin_buffer = [0u8; 128];
 
     loop {
@@ -172,6 +178,21 @@ pub async fn sd_logger_task(
 
         // postcard packs the `frame` directly into the `bin_buffer`
         match frame {
+            LogEvent::Mag(mag_data) => {
+                if let Ok(bytes) = postcard::to_slice(&mag_data, &mut bin_buffer) {
+                    if let Err(_e) = mag_file.write(bytes) {
+                        error!("Mag Write Failed");
+                    }
+                }
+                mag_burst_counter += 1;
+
+                if mag_burst_counter >= BURST_SIZE {
+                    mag_file.close().unwrap_or_default();
+                    mag_file = root_dir
+                        .open_file_in_dir(mag_filename.as_str(), Mode::ReadWriteCreateOrAppend)
+                        .unwrap();
+                }
+            }
             LogEvent::GPS(gps_data) => {
                 if let Ok(bytes) = postcard::to_slice(&gps_data, &mut bin_buffer) {
                     if let Err(_e) = gps_file.write(bytes) {

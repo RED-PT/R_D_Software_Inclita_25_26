@@ -723,6 +723,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b9e0384b61958566e926dc50660321d12159025e767c18e043daf26b70104c39"
 
 [[package]]
+name = "iis2mdc"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bb722bc82ed4bedccd7d9a385ff3c41173557df2e6f09d3a866e2d64366fc2e7"
+dependencies = [
+ "embedded-hal 1.0.0",
+]
+
+[[package]]
 name = "libm"
 version = "0.2.16"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -910,6 +919,7 @@ dependencies = [
  "embedded-io-async 0.7.0",
  "embedded-sdmmc",
  "heapless 0.8.0",
+ "iis2mdc",
  "ms5611-rs",
  "panic-halt",
  "panic-probe",
