@@ -8,7 +8,7 @@ edition = "2024"
 
 embassy-stm32 = { version = "0.5.0", features = [
   "defmt",
-  "stm32f413zh",
+  "stm32f446rc",
   "unstable-pac",
   "memory-x",
   "time-driver-tim4",

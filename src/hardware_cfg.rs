@@ -2,9 +2,6 @@
 //! altimeter, i2c gyroscope, etc...
 //! Kinda works like the config.h in the "C" code were used to
 //!
-#![allow(unreachable_code)]
-#![allow(dead_code)]
-#![allow(unused_variables)]
 use embassy_stm32::Peripherals;
 use embassy_stm32::gpio::{Level, Output, Speed};
 use embassy_stm32::i2c::{Config as I2cConfig, I2c};
@@ -18,7 +15,7 @@ use embassy_stm32::{Config, bind_interrupts, peripherals, sdmmc, usart};
 //NVIC and DMA
 bind_interrupts!(struct Irqs {
     SDIO => sdmmc::InterruptHandler<peripherals::SDIO>;
-    UART5 => usart::InterruptHandler<peripherals::UART5>;
+    USART1 => usart::InterruptHandler<peripherals::USART1>;
 
 });
 
@@ -67,33 +64,35 @@ impl Board<'static> {
     pub fn new(p: Peripherals) -> Self {
         let mut debug_uart_cfg = UsartConfig::default();
         debug_uart_cfg.baudrate = 115200;
-        let debug_uart = Uart::new_blocking(p.USART3, p.PD9, p.PD8, debug_uart_cfg).unwrap();
+        let debug_uart = Uart::new_blocking(p.USART2, p.PA3, p.PA2, debug_uart_cfg).unwrap();
 
-        let led_mcu_on = Output::new(p.PF2, Level::High, Speed::Low);
-        let led_other_function = Output::new(p.PB0, Level::High, Speed::Low);
+        let led_mcu_on = Output::new(p.PA12, Level::High, Speed::Low);
+        let led_other_function = Output::new(p.PB15, Level::High, Speed::Low);
 
         // GPS UART
         let mut gps_uart_cfg = UsartConfig::default();
         gps_uart_cfg.baudrate = 38400;
         let gps_uart = Uart::new(
-            p.UART5,
-            p.PB12,
-            p.PB13,
+            p.USART1,
+            p.PA10,
+            p.PA9,
             Irqs,
-            p.DMA1_CH7,
-            p.DMA1_CH0,
+            p.DMA2_CH7,
+            p.DMA2_CH2,
             gps_uart_cfg,
         )
         .unwrap();
 
         // GYRO I2C
         let i2c_cfg = I2cConfig::default();
-        let imu = I2c::new_blocking(p.I2C3, p.PA8, p.PB4, i2c_cfg);
+        let imu = I2c::new_blocking(p.I2C1, p.PB6, p.PB7, i2c_cfg);
 
         // Altimeter SPI
         let spi_cfg = SpiConfig::default();
-        let altimeter = Spi::new(p.SPI1, p.PA5, p.PA7, p.PA6, p.DMA2_CH2, p.DMA2_CH0, spi_cfg);
-        let altimeter_cs = Output::new(p.PC4, Level::High, Speed::High); //initalized
+        let altimeter = Spi::new(
+            p.SPI2, p.PB13, p.PC1, p.PC2, p.DMA1_CH4, p.DMA1_CH3, spi_cfg,
+        );
+        let altimeter_cs = Output::new(p.PA0, Level::High, Speed::High); //initalized
         //to high -> MS inactive
 
         // SD CARD SPI
@@ -103,14 +102,14 @@ impl Board<'static> {
         sd_spi_cfg.frequency = embassy_stm32::time::mhz(1);
 
         let sd_spi = Spi::new_blocking(
-            p.SPI2, p.PD3, // SCK
-            p.PC3, // MOSI
-            p.PC2, // MISO
+            p.SPI3, p.PC10, // SCK
+            p.PB5,  // MOSI
+            p.PC11, // MISO
             sd_spi_cfg,
         );
 
         // Chip Select must start HIGH (deselected)
-        let sd_cs = Output::new(p.PG5, Level::High, Speed::High);
+        let sd_cs = Output::new(p.PA1, Level::High, Speed::High);
         Self {
             debug_uart,
             led_mcu_on,

@@ -17,22 +17,14 @@ async fn main(spawner: Spawner) {
     let config = Board::set_clock();
     let p = embassy_stm32::init(config);
 
-    info!("Setting stuff ");
+    info!("Hello from STM32 :) ");
 
-    let mut board = Board::new(p);
+    let board = Board::new(p);
     //Spawning tasks
     spawner
         .spawn(another_blinker(board.led_other_function))
         .unwrap();
 
-    //spawner
-    //  .spawn(sd_card::test_raw_read(board.sd_spi, board.sd_cs))
-    //.unwrap();
-    board
-        .debug_uart
-        .blocking_write(b"Hello from STM32!\r\n")
-        .unwrap();
-    //spawner.spawn(mock_data::mock_sensor_task()).unwrap();
     spawner
         .spawn(storage::sd_card::sd_logger_task(board.sd_spi, board.sd_cs))
         .unwrap();

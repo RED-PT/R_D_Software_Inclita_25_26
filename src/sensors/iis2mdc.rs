@@ -4,7 +4,7 @@ use crate::telemetry::{DATA_CHANNEL, LogEvent, MagnetometerData};
 use defmt::{error, info};
 use embassy_stm32::i2c::{Error as I2cError, I2c};
 use embassy_stm32::mode::Blocking;
-use embassy_time::{Delay, Duration, Instant, Ticker};
+use embassy_time::{Duration, Instant, Ticker};
 use iis2mdc::Iis2mdc;
 
 #[embassy_executor::task]
