@@ -1,4 +1,4 @@
-use crate::telemetry::{AltimeterData, DATA_CHANNEL, LogEvent};
+use crate::telemetry::data::{AltimeterData, DATA_CHANNEL, LogEvent};
 
 use defmt::{error, info};
 use embassy_stm32::gpio::Output;

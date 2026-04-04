@@ -1,10 +1,11 @@
+use core::cell::RefCell;
 use defmt::Format;
-use embassy_sync::blocking_mutex::raw::ThreadModeRawMutex;
+use embassy_sync::blocking_mutex::{Mutex, raw::ThreadModeRawMutex};
 use embassy_sync::channel::Channel;
 use serde::Serialize;
 
 ///Magnetometer data structure
-#[derive(Format, Serialize)]
+#[derive(Format, Serialize, Clone)]
 pub struct MagnetometerData {
     pub mag_x: f32,
     pub mag_y: f32,
@@ -13,12 +14,11 @@ pub struct MagnetometerData {
 }
 
 /// IMUN DAta struct to use
-#[derive(Format, Serialize)]
+#[derive(Format, Serialize, Clone)]
 pub struct ImuData {
     pub yaw: f32,
     pub pitch: f32,
     pub roll: f32,
-    pub temperature: f32,
     pub mag_x: f32,
     pub mag_y: f32,
     pub mag_z: f32,
@@ -30,7 +30,7 @@ pub struct ImuData {
     pub lin_accel_d: f32,
     pub timestamp_ms: u32,
 }
-#[derive(Format, Serialize)]
+#[derive(Format, Serialize, Clone)]
 pub struct AltimeterData {
     pub pressure: f32,
     pub altitude: f32,
@@ -69,7 +69,7 @@ impl GpsFix {
         }
     }
 }
-#[derive(Format, Serialize)]
+#[derive(Format, Serialize, Clone)]
 pub struct GnggaMessage {
     /// UTC Time (HHMMSS.SS)
     pub utc_time: UtcTime,
@@ -86,7 +86,7 @@ pub struct GnggaMessage {
     pub timestamp_ms: u32,
 }
 
-#[derive(Format, Serialize)]
+#[derive(Format, Serialize, Clone)]
 pub struct UtcTime {
     pub hours: u8,
     pub minutes: u8,
@@ -103,3 +103,89 @@ pub enum LogEvent {
 //The Channel (Our FreeRTOS StreamBuffer equivalent)
 // the channel can hold up to 25 readings before the mock feeder has to wait.
 pub static DATA_CHANNEL: Channel<ThreadModeRawMutex, LogEvent, 100> = Channel::new();
+
+// LoRa smaller structs
+
+#[derive(Format, Serialize, Clone)]
+pub struct ImuTx {
+    pub yaw: f32,
+    pub pitch: f32,
+    pub roll: f32,
+    pub mag_x: f32,
+    pub mag_y: f32,
+    pub mag_z: f32,
+    pub lin_accel_n: f32,
+    pub lin_accel_e: f32,
+    pub lin_accel_d: f32,
+}
+
+// Quick converter from SD struct to the LoRa struct
+impl From<ImuData> for ImuTx {
+    fn from(d: ImuData) -> Self {
+        Self {
+            yaw: d.yaw,
+            pitch: d.pitch,
+            roll: d.roll,
+            mag_x: d.mag_x,
+            mag_y: d.mag_y,
+            mag_z: d.mag_z,
+            lin_accel_n: d.lin_accel_n,
+            lin_accel_e: d.lin_accel_e,
+            lin_accel_d: d.lin_accel_d,
+        }
+    }
+}
+
+#[derive(Format, Serialize, Clone)]
+pub struct AltimeterTx {
+    pub pressure: f32,
+    pub altitude: f32,
+    pub temperature: f32,
+}
+
+impl From<AltimeterData> for AltimeterTx {
+    fn from(d: AltimeterData) -> Self {
+        Self {
+            pressure: d.pressure,
+            altitude: d.altitude,
+            temperature: d.temperature,
+        }
+    }
+}
+
+#[derive(Format, Serialize, Clone)]
+pub struct GpsTx {
+    pub latitude: f64,
+    pub longitude: f64,
+    pub fix: GpsFix,
+    pub altitude: f32,
+}
+
+impl From<GnggaMessage> for GpsTx {
+    fn from(d: GnggaMessage) -> Self {
+        Self {
+            latitude: d.latitude,
+            longitude: d.longitude,
+            fix: d.fix,
+            altitude: d.altitude,
+        }
+    }
+}
+
+// This struct groups the latest data.
+// Option allows us to transmit even if some sensors haven't fired yet.
+#[derive(Format, Serialize, Clone)]
+pub struct DownlinkPacket {
+    pub imu: Option<ImuData>,
+    pub baro: Option<AltimeterData>,
+    pub gps: Option<GnggaMessage>,
+}
+
+// A global, thread-safe variable to hold the latest state
+// INFO: We use RefCell cause, in a no std environment, Mutex does not implement interior mutablity
+pub static LATEST_TELEMETRY: Mutex<ThreadModeRawMutex, RefCell<DownlinkPacket>> =
+    Mutex::new(RefCell::new(DownlinkPacket {
+        imu: None,
+        baro: None,
+        gps: None,
+    }));

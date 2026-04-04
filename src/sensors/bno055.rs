@@ -1,4 +1,4 @@
-use crate::telemetry::{DATA_CHANNEL, ImuData, LogEvent};
+use crate::telemetry::data::{DATA_CHANNEL, ImuData, LogEvent};
 use bno055::{BNO055OperationMode, Bno055};
 use defmt::{Debug2Format, error, info};
 use embassy_stm32::i2c::I2c;
@@ -62,8 +62,6 @@ pub async fn bno055_logger_task(i2c_bus: I2c<'static, Blocking, embassy_stm32::i
             yaw,
             pitch,
             roll,
-
-            temperature: imu.temperature().unwrap_or(0) as f32,
 
             mag_x: mag.x,
             mag_y: mag.y,

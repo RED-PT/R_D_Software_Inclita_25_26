@@ -1,4 +1,4 @@
-use crate::telemetry::{AltimeterData, DATA_CHANNEL, ImuData, LogEvent};
+use crate::telemetry::data::{AltimeterData, DATA_CHANNEL, ImuData, LogEvent};
 use defmt::info;
 use embassy_time::{Duration, Instant, Ticker};
 
@@ -14,7 +14,6 @@ pub async fn mock_imu_task() {
             yaw: 0.0,
             pitch: 0.0,
             roll: 0.0,
-            temperature: 25.0,
             mag_x: 0.0,
             mag_y: 0.0,
             mag_z: 0.0,
