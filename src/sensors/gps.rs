@@ -1,7 +1,6 @@
 use crate::telemetry::{DATA_CHANNEL, GnggaMessage, GpsFix, LogEvent, UtcTime};
-use defmt::{error, info, warn};
+use defmt::{error, warn};
 use embassy_stm32::usart::Uart;
-use embassy_time::Instant;
 
 #[embassy_executor::task]
 pub async fn gps_task(mut uart: Uart<'static, embassy_stm32::mode::Async>) {

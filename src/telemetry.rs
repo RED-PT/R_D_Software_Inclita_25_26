@@ -1,7 +1,6 @@
 use defmt::Format;
 use embassy_sync::blocking_mutex::raw::ThreadModeRawMutex;
 use embassy_sync::channel::Channel;
-use heapless::String;
 use serde::Serialize;
 
 ///Magnetometer data structure
