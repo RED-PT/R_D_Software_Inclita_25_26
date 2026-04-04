@@ -1,4 +1,4 @@
-use crate::telemetry::data::{AltimeterData, DATA_CHANNEL, LogEvent};
+use crate::telemetry::data::{AltimeterData, DATA_CHANNEL, LATEST_TELEMETRY, LogEvent};
 
 use defmt::{error, info};
 use embassy_stm32::gpio::Output;
@@ -41,7 +41,10 @@ pub async fn ms5611_task(
                 };
                 info!("{:?}", data);
                 // Wrap it and send it!
-                DATA_CHANNEL.send(LogEvent::Baro(data)).await;
+                DATA_CHANNEL.send(LogEvent::Baro(data.clone())).await;
+                LATEST_TELEMETRY.lock(|t| {
+                    t.borrow_mut().baro = Some(data.into());
+                });
             }
             Err(_) => error!("MS5607 read failed!"),
         }
