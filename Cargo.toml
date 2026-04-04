@@ -65,6 +65,7 @@ heapless = { version = "0.8", features = ["defmt-03", "serde"] }
 bno055 = "0.4.0"
 ms5611-rs = "0.1.1"
 iis2mdc = "0.2.0"
+sx127x_lora = "0.3.1"
 [profile.release]
 debug = 2
 

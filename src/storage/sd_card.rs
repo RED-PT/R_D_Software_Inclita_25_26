@@ -1,7 +1,7 @@
 use crate::storage::sd_card_utils;
-use crate::telemetry::{DATA_CHANNEL, LogEvent};
+use crate::telemetry::data::{DATA_CHANNEL, LogEvent};
 use core::fmt::Write;
-use defmt::{info, println};
+use defmt::info;
 use embassy_stm32::gpio::Output;
 use embassy_stm32::mode::Blocking;
 use embassy_stm32::spi::Spi;
@@ -48,8 +48,8 @@ pub async fn sd_logger_task(
     }
 
     let volume_mgr = MyVolumeManager::new_with_limits(sdcard, DummyTimesource, 1);
-    let mut volume0 = volume_mgr.open_volume(VolumeIdx(0)).unwrap();
-    let mut root_dir = volume0.open_root_dir().unwrap();
+    let volume0 = volume_mgr.open_volume(VolumeIdx(0)).unwrap();
+    let root_dir = volume0.open_root_dir().unwrap();
 
     // 1. Find the next available run/session number
     let mut run_num = 1;

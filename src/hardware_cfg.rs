@@ -33,6 +33,9 @@ pub struct Board<'a> {
     pub altimeter_cs: Output<'a>,
     pub sd_spi: Spi<'a, Blocking, embassy_stm32::spi::mode::Master>,
     pub sd_cs: Output<'a>,
+    pub lora_spi: Spi<'a, Blocking, embassy_stm32::spi::mode::Master>,
+    pub lora_cs: Output<'a>,
+    pub lora_reset: Output<'a>,
 }
 
 impl Board<'static> {
@@ -107,7 +110,23 @@ impl Board<'static> {
             p.PC11, // MISO
             sd_spi_cfg,
         );
+        // --- LORA SPI SETUP ---
+        let mut lora_spi_cfg = SpiConfig::default();
+        lora_spi_cfg.frequency = embassy_stm32::time::mhz(1); // 1 MHz is safe for RFM95 init
 
+        let lora_spi = Spi::new_blocking(
+            p.SPI1,
+            p.PA5,
+            p.PA7,
+            p.PA6,
+            lora_spi_cfg, // SPI1: SCK, MOSI, MISO
+        );
+
+        // CS is active low, so initialize it High
+        let lora_cs = Output::new(p.PA4, Level::High, Speed::High);
+
+        // Reset is active low, so initialize it High
+        let lora_reset = Output::new(p.PC4, Level::High, Speed::High);
         // Chip Select must start HIGH (deselected)
         let sd_cs = Output::new(p.PA1, Level::High, Speed::High);
         Self {
@@ -120,6 +139,9 @@ impl Board<'static> {
             altimeter_cs,
             sd_spi,
             sd_cs,
+            lora_spi,
+            lora_cs,
+            lora_reset,
         }
     }
 }

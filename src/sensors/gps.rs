@@ -1,4 +1,4 @@
-use crate::telemetry::{DATA_CHANNEL, GnggaMessage, GpsFix, LogEvent, UtcTime};
+use crate::telemetry::data::{DATA_CHANNEL, GnggaMessage, GpsFix, LogEvent, UtcTime};
 use defmt::{error, warn};
 use embassy_stm32::usart::Uart;
 

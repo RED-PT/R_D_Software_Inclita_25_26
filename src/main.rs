@@ -1,6 +1,5 @@
 #![no_std]
 #![no_main]
-#![allow(unused_assignments)]
 mod hardware_cfg;
 mod sensors;
 mod storage;
@@ -38,6 +37,13 @@ async fn main(spawner: Spawner) {
             .spawn(sensors::ms5611::ms5611_task(
                 board.altimeter,
                 board.altimeter_cs,
+            ))
+            .unwrap();
+        spawner
+            .spawn(telemetry::lora::lora_task(
+                board.lora_spi,
+                board.lora_cs,
+                board.lora_reset,
             ))
             .unwrap();
     }
