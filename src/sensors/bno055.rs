@@ -1,4 +1,4 @@
-use crate::telemetry::data::{DATA_CHANNEL, ImuData, LogEvent};
+use crate::telemetry::data::{DATA_CHANNEL, ImuData, LATEST_TELEMETRY, LogEvent};
 use bno055::{BNO055OperationMode, Bno055};
 use defmt::{Debug2Format, error, info};
 use embassy_stm32::i2c::I2c;
@@ -79,9 +79,13 @@ pub async fn bno055_logger_task(i2c_bus: I2c<'static, Blocking, embassy_stm32::i
         };
         info!("{:?}", data);
         // Send to the SD Card
-        DATA_CHANNEL.send(LogEvent::Imu(data)).await;
+        DATA_CHANNEL.send(LogEvent::Imu(data.clone())).await;
 
-        // Yield back to Embassy
+        LATEST_TELEMETRY.lock(|t| {
+            t.borrow_mut().imu = Some(data.into());
+        });
+
+        // Yield back to embassy
         ticker.next().await;
     }
 }

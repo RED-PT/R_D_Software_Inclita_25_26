@@ -1,4 +1,6 @@
-use crate::telemetry::data::{DATA_CHANNEL, GnggaMessage, GpsFix, LogEvent, UtcTime};
+use crate::telemetry::data::{
+    DATA_CHANNEL, GnggaMessage, GpsFix, LATEST_TELEMETRY, LogEvent, UtcTime,
+};
 use defmt::{error, warn};
 use embassy_stm32::usart::Uart;
 
@@ -56,7 +58,10 @@ async fn parse_and_send_gngga(line: &str) {
             timestamp_ms: embassy_time::Instant::now().as_millis() as u32,
         };
 
-        DATA_CHANNEL.send(LogEvent::GPS(data)).await;
+        DATA_CHANNEL.send(LogEvent::GPS(data.clone())).await;
+        LATEST_TELEMETRY.lock(|t| {
+            t.borrow_mut().gps = Some(data.into());
+        });
     } else {
         warn!("GPS: Waiting for Satellites (No Fix)");
     }
