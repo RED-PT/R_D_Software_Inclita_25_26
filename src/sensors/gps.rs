@@ -90,22 +90,15 @@ fn nmea_to_decimal(raw: &str, direction: &str) -> f64 {
 // parse UTCTime
 fn parse_utc_time(raw: &str) -> UtcTime {
     // If the string is empty or corrupted, return zeros
-    if raw.len() >= 6 {
-        // Slice the string by index: HH(0..2) MM(2..4) SS.SS(4..)
-        let hours = raw.get(0..2).unwrap_or("0").parse::<u8>().unwrap_or(0);
-        let minutes = raw.get(2..4).unwrap_or("0").parse::<u8>().unwrap_or(0);
-        let seconds = raw.get(4..).unwrap_or("0.0").parse::<f32>().unwrap_or(0.0);
 
-        UtcTime {
-            hours,
-            minutes,
-            seconds,
-        }
-    } else {
-        UtcTime {
-            hours: 0,
-            minutes: 0,
-            seconds: 0.0,
-        }
+    // Slice the string by index: HH(0..2) MM(2..4) SS.SS(4..)
+    let hours = raw.get(0..2).unwrap_or("0").parse::<u8>().unwrap_or(0);
+    let minutes = raw.get(2..4).unwrap_or("0").parse::<u8>().unwrap_or(0);
+    let seconds = raw.get(4..).unwrap_or("0.0").parse::<f32>().unwrap_or(0.0);
+
+    UtcTime {
+        hours,
+        minutes,
+        seconds,
     }
 }
