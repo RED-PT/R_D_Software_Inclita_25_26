@@ -1,14 +1,14 @@
 use crate::storage::sd_card_utils;
 use crate::telemetry::data::{DATA_CHANNEL, LogEvent};
 use core::fmt::Write;
-use defmt::info;
+use defmt::{error, info};
 use embassy_stm32::gpio::Output;
 use embassy_stm32::mode::Blocking;
 use embassy_stm32::spi::Spi;
 use embassy_time::Delay;
 use embedded_hal_bus::spi::ExclusiveDevice;
 use embedded_sdmmc::{Mode, SdCard, TimeSource, Timestamp, VolumeIdx, VolumeManager};
-use heapless::String;
+use heapless::{String, Vec};
 
 struct DummyTimesource;
 impl TimeSource for DummyTimesource {
@@ -40,7 +40,7 @@ pub async fn sd_logger_task(
         Ok(size) => info!("Card size is {} bytes", size),
         Err(_) => {
             // Using your updated util logger
-            sd_card_utils::log_error(&(), "Failed to talk to SD Card. Check wiring!");
+            error!("Failed to talk to SD Card. Check wiring!");
             loop {
                 embassy_time::Timer::after_secs(1).await;
             }
@@ -49,30 +49,19 @@ pub async fn sd_logger_task(
 
     let volume_mgr = MyVolumeManager::new_with_limits(sdcard, DummyTimesource, 1);
     let volume0 = volume_mgr.open_volume(VolumeIdx(0)).unwrap();
-    let root_dir = volume0.open_root_dir().unwrap();
+    let mut root_dir = volume0.open_root_dir().unwrap();
 
     // 1. Find the next available run/session number
-    let mut run_num = 1;
-    let mut temp_filename: String<32> = String::new();
-    loop {
-        temp_filename.clear();
-        write!(temp_filename, "IMU_{}", run_num).unwrap();
-        // Just checking if the IMU file for this session exists
-        match root_dir.open_file_in_dir(temp_filename.as_str(), Mode::ReadOnly) {
-            Ok(file) => {
-                // File exists, bump the number and close it
-                file.close().unwrap_or_default();
-                run_num += 1;
-            }
-            Err(embedded_sdmmc::Error::NotFound) => break, // Found an empty slot!
-            Err(_) => {
-                run_num += 1;
-                if run_num > 100 {
-                    break;
-                } // Safety escape
+    let run_num = match sd_card_utils::find_next_available_slot(&mut root_dir, "IMU") {
+        Ok(num) => num,
+        Err(_) => {
+            error!("No empty file slots available! (1 to 100 all full). Please format SD Card.");
+            // Spin forever safely
+            loop {
+                embassy_time::Timer::after_secs(1).await;
             }
         }
-    }
+    };
 
     info!("Starting logging session #{}", run_num);
 
@@ -87,90 +76,65 @@ pub async fn sd_logger_task(
     write!(gps_filename, "GPS_{}", run_num).unwrap();
     write!(mag_filename, "MAG_{}", run_num).unwrap();
 
-    // 3. Open the files
-    let mut imu_file = root_dir
-        .open_file_in_dir(imu_filename.as_str(), Mode::ReadWriteCreateOrAppend)
-        .unwrap();
-    let mut baro_file = root_dir
-        .open_file_in_dir(baro_filename.as_str(), Mode::ReadWriteCreateOrAppend)
-        .unwrap();
-    let mut gps_file = root_dir
-        .open_file_in_dir(gps_filename.as_str(), Mode::ReadWriteCreateOrAppend)
-        .unwrap();
-    let mut mag_file = root_dir
-        .open_file_in_dir(mag_filename.as_str(), Mode::ReadWriteCreateOrAppend)
-        .unwrap();
+    // This allows us to hold several readings before bothering the SD card.
+    let mut imu_buf: Vec<u8, 512> = Vec::new();
+    let mut baro_buf: Vec<u8, 512> = Vec::new();
+    let mut gps_buf: Vec<u8, 512> = Vec::new();
+    let mut mag_buf: Vec<u8, 512> = Vec::new();
 
-    info!("Starting Binary Data Logging!");
+    // A small temporary array just for serializing a single event
+    let mut temp_encode_buf = [0u8; 64];
 
-    const BURST_SIZE: u32 = 30;
-    let mut imu_burst_counter = 0;
-    let mut baro_burst_counter = 0;
-    let mut gps_burst_counter = 0;
-    let mut mag_burst_counter = 0;
-    let mut bin_buffer = [0u8; 128];
+    info!("Starting Multi-File Buffered Data Logging!");
 
-    // DRY MACRO: Handles the repetitive serialization, writing, and burst-refresh logic
-    macro_rules! write_sensor_data {
-        ($data:expr, $file:expr, $filename:expr, $counter:expr, $err_msg:expr) => {
-            if let Ok(bytes) = postcard::to_slice(&$data, &mut bin_buffer) {
-                if let Err(_e) = $file.write(bytes) {
-                    sd_card_utils::log_error(&_e, $err_msg);
+    // 4. The Macro that handles Buffering -> Opening -> Writing -> Closing
+    macro_rules! write_buffered {
+        ($data:expr, $buffer:expr, $filename:expr) => {
+            // Serialize the struct into bytes
+            if let Ok(encoded_bytes) = postcard::to_slice(&$data, &mut temp_encode_buf) {
+
+                // If adding these new bytes would overflow our RAM buffer, it's time to flush to the SD card!
+                if $buffer.len() + encoded_bytes.len() > $buffer.capacity() {
+
+                    // 1. OPEN the specific file safely
+                    match sd_card_utils::open_file_with_retry(&mut root_dir, $filename.as_str(), Mode::ReadWriteCreateOrAppend) {
+                        Ok(mut file) => {
+                            // 2. WRITE the whole chunk at once
+                            if let Err(e) = file.write(&$buffer) {
+                                error!("Write Failed on {}: {:?}", $filename.as_str(), defmt::Debug2Format(&e));
+                            }
+                            // 3. CLOSE the file (This releases the mutable borrow on root_dir!)
+                            file.close().unwrap_or_default();
+                        }
+                        Err(e) => error!("Failed to open {} for flushing: {:?}", $filename.as_str(), defmt::Debug2Format(&e)),
+                    }
+
+                    // Clear the buffer after writing
+                    $buffer.clear();
                 }
-            }
-            $counter += 1;
 
-            if $counter >= BURST_SIZE {
-                $file.close().unwrap_or_default();
-                // Re-open to flush FAT table updates to the SD card
-                $file = root_dir
-                    .open_file_in_dir($filename.as_str(), Mode::ReadWriteCreateOrAppend)
-                    .unwrap();
-                $counter = 0;
+                // Append the new bytes to the buffer
+                let _ = $buffer.extend_from_slice(encoded_bytes);
             }
         };
     }
 
+    // 5. The Event Loop
     loop {
-        // WAIT FOR DATA
         let frame: LogEvent = DATA_CHANNEL.receive().await;
 
         match frame {
             LogEvent::Mag(mag_data) => {
-                write_sensor_data!(
-                    mag_data,
-                    mag_file,
-                    mag_filename,
-                    mag_burst_counter,
-                    "Mag Write Failed"
-                );
+                write_buffered!(mag_data, mag_buf, mag_filename);
             }
             LogEvent::GPS(gps_data) => {
-                write_sensor_data!(
-                    gps_data,
-                    gps_file,
-                    gps_filename,
-                    gps_burst_counter,
-                    "GPS Write Failed"
-                );
+                write_buffered!(gps_data, gps_buf, gps_filename);
             }
             LogEvent::Imu(imu_data) => {
-                write_sensor_data!(
-                    imu_data,
-                    imu_file,
-                    imu_filename,
-                    imu_burst_counter,
-                    "IMU Write Failed"
-                );
+                write_buffered!(imu_data, imu_buf, imu_filename);
             }
             LogEvent::Baro(baro_data) => {
-                write_sensor_data!(
-                    baro_data,
-                    baro_file,
-                    baro_filename,
-                    baro_burst_counter,
-                    "Baro Write Failed"
-                );
+                write_buffered!(baro_data, baro_buf, baro_filename);
             }
         }
     }
