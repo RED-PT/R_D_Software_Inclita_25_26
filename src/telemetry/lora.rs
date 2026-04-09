@@ -15,7 +15,13 @@ pub async fn lora_task(
     info!("Initializing RFM95 LoRa Module...");
     const FREQUENCY: i64 = 868;
 
-    let mut lora = LoRa::new(spi, cs, reset, FREQUENCY, Delay).unwrap();
+    let mut lora = match LoRa::new(spi, cs, reset, FREQUENCY, Delay) {
+        Ok(radio) => radio,
+        Err(_) => {
+            // We throw away the specific error payload and just panic cleanly via defmt
+            defmt::panic!("Failed to initialize RFM95 LoRa module!");
+        }
+    };
 
     // 1. Set Maximum Bandwidth (500 kHz)
     // Valid options for RFM95: 125_000, 250_000, or 500_000 Hz.

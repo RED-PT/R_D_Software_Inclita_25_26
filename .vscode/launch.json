@@ -1,23 +1,24 @@
 {
-    "version": "0.2.0",
-    "configurations": [
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "probe-rs-debug",
+      "request": "launch",
+      "name": "Embassy Debug (probe-rs)",
+      "cwd": "${workspaceFolder}",
+      "chip": "STM32F413ZHT",
+      "flashingConfig": {
+        "flashingEnabled": true,
+        "resetAfterFlashing": true,
+        "haltAfterReset": true,
+      },
+      "rust-analyzer.check.allTargets": false,
+      "coreConfigs": [
         {
-            "type": "probe-rs-debug",
-            "request": "launch",
-            "name": "Embassy Debug (probe-rs)",
-            "cwd": "${workspaceFolder}",
-            "chip": "STM32F413ZHT", 
-            "flashingConfig": {
-                "flashingEnabled": true,
-                "resetAfterFlashing": true,
-                "haltAfterReset": true
-            },
-            "coreConfigs": [
-                {
-                    "coreIndex": 0,
-                    "programBinary": "${workspaceFolder}/target/thumbv7em-none-eabihf/debug/r_d_inclita_sofware"
-                }
-            ]
-        }
-    ]
+          "coreIndex": 0,
+          "programBinary": "${workspaceFolder}/target/thumbv7em-none-eabihf/debug/r_d_inclita_sofware",
+        },
+      ],
+    },
+  ],
 }

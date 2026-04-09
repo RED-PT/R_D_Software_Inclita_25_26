@@ -1,6 +1,6 @@
 use crate::telemetry::data::{DATA_CHANNEL, ImuData, LATEST_TELEMETRY, LogEvent};
 use bno055::{BNO055OperationMode, Bno055};
-use defmt::{Debug2Format, error, info};
+use defmt::{error, info};
 use embassy_stm32::i2c::I2c;
 use embassy_stm32::mode::Blocking;
 use embassy_time::{Delay, Duration, Instant, Ticker, Timer};
@@ -16,7 +16,7 @@ pub async fn bno055_logger_task(i2c_bus: I2c<'static, Blocking, embassy_stm32::i
 
     //Boot up the sensor
     if let Err(e) = imu.init(&mut delay) {
-        error!("Failed to initialize BNO055! {:?}", Debug2Format(&e));
+        error!("Failed to initialize BNO055! {:?}", e);
         loop {
             Timer::after_secs(1).await;
         }
@@ -24,7 +24,7 @@ pub async fn bno055_logger_task(i2c_bus: I2c<'static, Blocking, embassy_stm32::i
 
     //Set to NDOF mode (Sensor Fusion ON)
     if let Err(e) = imu.set_mode(BNO055OperationMode::NDOF, &mut delay) {
-        error!("Failed to set BNO055 mode! {:?}", Debug2Format(&e));
+        error!("Failed to set BNO055 mode! {:?}", e);
         loop {
             Timer::after_secs(1).await;
         }
@@ -32,7 +32,7 @@ pub async fn bno055_logger_task(i2c_bus: I2c<'static, Blocking, embassy_stm32::i
 
     info!("BNO055 initialized and fused! Starting data loop (100Hz)...");
 
-    let mut timestamp_ms: u32 = 0;
+    let mut timestamp_ms;
 
     loop {
         timestamp_ms = Instant::now().as_millis() as u32;
