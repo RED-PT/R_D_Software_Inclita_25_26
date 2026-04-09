@@ -1,6 +1,6 @@
 use core::fmt::Write;
 use defmt::{error, info, warn};
-use embedded_sdmmc::{Error as SdError, File, Mode};
+use embedded_sdmmc::{BlockDevice, Error as SdError, File, Mode};
 use heapless::String;
 
 #[derive(Debug)]
@@ -19,6 +19,7 @@ pub fn find_next_available_slot<
 where
     D: embedded_sdmmc::BlockDevice,
     T: embedded_sdmmc::TimeSource,
+    <D as BlockDevice>::Error: defmt::Format,
 {
     let mut full_filename: String<32> = String::new();
     for file_num in 1..=100 {
@@ -38,7 +39,7 @@ where
                 return Ok(file_num); // Return the number wrapped in Ok()
             }
             Err(e) => {
-                error!("Error opening file: {:?}", defmt::Debug2Format(&e));
+                error!("Error opening file: {:?}", e);
             }
         }
     }

@@ -101,12 +101,12 @@ pub async fn sd_logger_task(
                         Ok(file) => {
                             // 2. WRITE the whole chunk at once
                             if let Err(e) = file.write(&$buffer) {
-                                error!("Write Failed on {}: {:?}", $filename.as_str(), defmt::Debug2Format(&e));
+                                error!("Write Failed on {}: {:?}", $filename.as_str(), e);
                             }
                             // 3. CLOSE the file (This releases the mutable borrow on root_dir!)
                             file.close().unwrap_or_default();
                         }
-                        Err(e) => error!("Failed to open {} for flushing: {:?}", $filename.as_str(), defmt::Debug2Format(&e)),
+                        Err(e) => error!("Failed to open {} for flushing: {:?}", $filename.as_str(), e),
                     }
 
                     // Clear the buffer after writing

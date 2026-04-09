@@ -38,7 +38,7 @@ defmt-rtt = "1.1.0"
 embedded-hal-bus = { version = "0.3.0", features = ["async"] }
 panic-probe = { version = "1.0.0", features = ["print-defmt"] }
 
-embedded-sdmmc = { version ="0.9.0", default-features = false}
+embedded-sdmmc = { version ="0.9.0", features = ["defmt-log"], default-features = false}
 cortex-m-rt = "0.7.5"
 cortex-m = { version = "0.7.6", features = [
   "inline-asm",
@@ -49,7 +49,7 @@ cortex-m = { version = "0.7.6", features = [
 serde = { version = "1.0", default-features = false, features = ["derive"] }
 postcard = { version = "1.0", default-features = false }
 heapless = { version = "0.8", features = ["defmt-03", "serde"] }
-bno055 = "0.4.0"
+bno055 = {version = "0.4.0", features = ["defmt-03"]}
 ms5611-rs = "0.1.1"
 sx127x_lora = { version = "0.3.1", default-features = false }
 [profile.dev]

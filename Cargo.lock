@@ -82,6 +82,7 @@ checksum = "20ae371e0ae10daadee46116bcbf64ead594b5f83fb0e50f380eca3dcf5b853a"
 dependencies = [
  "bitflags 2.11.0",
  "byteorder",
+ "defmt 0.3.100",
  "embedded-hal 1.0.0",
  "mint",
  "num-derive",
@@ -502,6 +503,9 @@ name = "embedded-hal"
 version = "1.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "361a90feb7004eca4019fb28352a9465666b24f840f5c3cddf0ff13920590b89"
+dependencies = [
+ "defmt 0.3.100",
+]
 
 [[package]]
 name = "embedded-hal-async"
@@ -574,6 +578,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ce3c7f9ea039eeafc4a49597b7bd5ae3a1c8e51b2803a381cb0f29ce90fe1ec6"
 dependencies = [
  "byteorder",
+ "defmt 0.3.100",
  "embedded-hal 1.0.0",
  "embedded-io 0.6.1",
  "heapless 0.8.0",
