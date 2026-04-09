@@ -1,10 +1,12 @@
 #![no_std]
 #![no_main]
+#![warn(unused_crate_dependencies)]
 mod hardware_cfg;
 mod sensors;
 mod storage;
 mod telemetry;
 use crate::hardware_cfg::Board;
+use cortex_m as _;
 use defmt::*; // to use debuger shit
 use embassy_executor::Spawner;
 use embassy_stm32::gpio::Output;
