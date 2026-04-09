@@ -64,7 +64,7 @@ postcard = { version = "1.0", default-features = false }
 heapless = { version = "0.8", features = ["defmt-03", "serde"] }
 bno055 = "0.4.0"
 ms5611-rs = "0.1.1"
-sx127x_lora ={ version = "0.3.1", default-features = false}
+sx127x_lora = { version = "0.3.1", default-features = false }
 [profile.dev]
 # Optimize for size even in debug builds
 opt-level = "s"
@@ -78,7 +78,7 @@ codegen-units = 1
 lto = true
 opt-level = "z"
 strip = true
-debug = 2 # Keep debug symbols so defmt still works in release mode!
+debug = 2         # Keep debug symbols so defmt still works in release mode!
 
 [features]
 default = []
