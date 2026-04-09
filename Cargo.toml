@@ -40,7 +40,7 @@ embassy-futures = "0.1.2"
 
 defmt = "1.0.1"
 defmt-rtt = "1.1.0"
-#cortex-m stuff and hal stuff 
+#cortex-m stuff and hal stuff
 cortex-m = { version = "0.7.6", features = [
   "inline-asm",
   "critical-section-single-core",
@@ -64,11 +64,21 @@ postcard = { version = "1.0", default-features = false }
 heapless = { version = "0.8", features = ["defmt-03", "serde"] }
 bno055 = "0.4.0"
 ms5611-rs = "0.1.1"
-iis2mdc = "0.2.0"
-sx127x_lora = "0.3.1"
-[profile.release]
-debug = 2
+sx127x_lora ={ version = "0.3.1", default-features = false}
+[profile.dev]
+# Optimize for size even in debug builds
+opt-level = "s"
 
+[profile.dev.package."*"]
+# Aggressively optimize all of your dependencies (like Embassy and standard library)
+opt-level = "z"
+
+[profile.release]
+codegen-units = 1
+lto = true
+opt-level = "z"
+strip = true
+debug = 2 # Keep debug symbols so defmt still works in release mode!
 
 [features]
 default = []
@@ -76,3 +86,9 @@ mock-sensors = [] # Builds the mock version were we send the mock data
 
 [package.metadata.embassy]
 build = [{ target = "thumbv7em-none-eabihf" }]
+
+[[bin]]
+name = "r_d_inclita_sofware"
+path = "src/main.rs"
+test = false
+doctest = false

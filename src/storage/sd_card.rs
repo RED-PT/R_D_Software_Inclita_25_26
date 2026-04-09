@@ -98,7 +98,7 @@ pub async fn sd_logger_task(
 
                     // 1. OPEN the specific file safely
                     match sd_card_utils::open_file_with_retry(&mut root_dir, $filename.as_str(), Mode::ReadWriteCreateOrAppend) {
-                        Ok(mut file) => {
+                        Ok(file) => {
                             // 2. WRITE the whole chunk at once
                             if let Err(e) = file.write(&$buffer) {
                                 error!("Write Failed on {}: {:?}", $filename.as_str(), defmt::Debug2Format(&e));
