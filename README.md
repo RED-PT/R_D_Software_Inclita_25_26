@@ -40,7 +40,7 @@ Rust was chosen also because of being easy to deploy testing and mocks, to see h
     ├── lora.rs
     └── mod.rs
 ```
-
+ 
 ## Roadmap
 
 - [x] Basic async executor and GPIO blinking.
