@@ -57,6 +57,8 @@ pub async fn bno055_logger_task(i2c_bus: I2c<'static, Blocking, embassy_stm32::i
             y: 0.0,
             z: 0.0,
         });
+        // this is kinda of a rabbithole / overkill if you dont make computations with this data, but for supporting control algorithms id recommend you see
+        // https://crates.io/crates/uom
 
         let data = ImuData {
             yaw,

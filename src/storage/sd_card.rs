@@ -24,6 +24,11 @@ impl TimeSource for DummyTimesource {
     }
 }
 
+// do you really need these limits? it seems to be a bit too much, 6 volumes!?
+// struct size:
+// files - 24 * 4
+// dirs  - 3 * 4
+// volum - 16 * 6
 type MyVolumeManager<D, T> = VolumeManager<D, T, 4, 4, 6>;
 
 #[embassy_executor::task]
@@ -71,13 +76,13 @@ pub async fn sd_logger_task(
     let mut gps_filename: String<32> = String::new();
     let mut mag_filename: String<32> = String::new();
 
-    write!(imu_filename, "IMU_{}", run_num).unwrap();
+    write!(imu_filename, "IMU_{}", run_num).unwrap(); // use format! instead! 
     write!(baro_filename, "BARO_{}", run_num).unwrap();
     write!(gps_filename, "GPS_{}", run_num).unwrap();
     write!(mag_filename, "MAG_{}", run_num).unwrap();
 
     // This allows us to hold several readings before bothering the SD card.
-    let mut imu_buf: Vec<u8, 512> = Vec::new();
+    let mut imu_buf: Vec<u8, 512> = Vec::new(); // 512 used because of sd card block size? if so, nice. but having hardwritten values is bad practice, maybe make it a const. const are zero-cost! 
     let mut baro_buf: Vec<u8, 512> = Vec::new();
     let mut gps_buf: Vec<u8, 512> = Vec::new();
     let mut mag_buf: Vec<u8, 512> = Vec::new();
@@ -97,16 +102,20 @@ pub async fn sd_logger_task(
                 if $buffer.len() + encoded_bytes.len() > $buffer.capacity() {
 
                     // 1. OPEN the specific file safely
-                    match sd_card_utils::open_file_with_retry(&mut root_dir, $filename.as_str(), Mode::ReadWriteCreateOrAppend) {
+                    match sd_card_utils::open_file_with_retry(&mut root_dir, $filename, Mode::ReadWriteCreateOrAppend) {
                         Ok(file) => {
                             // 2. WRITE the whole chunk at once
                             if let Err(e) = file.write(&$buffer) {
-                                error!("Write Failed on {}: {:?}", $filename.as_str(), e);
+                                error!("Write Failed on {}: {:?}", $filename, e); 
+                                // using filename.as_str() here is bad practice! string should only be pased if mutated. 
+                                // if not, u can pass &str instead, which can be created through differnet str implementations, including heapless String and &'static str literals. 
                             }
                             // 3. CLOSE the file (This releases the mutable borrow on root_dir!)
-                            file.close().unwrap_or_default();
+                            // file.close().unwrap_or_default(); // bad practice! 
+                            _ = file.close(); // this shuold be used instead, as it explicitly states the returned value is ignored. 
+                            // use .unwrap_or_default() only when you want to handle the error by using a default value, not when you want to ignore it.
                         }
-                        Err(e) => error!("Failed to open {} for flushing: {:?}", $filename.as_str(), e),
+                        Err(e) => error!("Failed to open {} for flushing: {:?}", $filename, e),
                     }
 
                     // Clear the buffer after writing
@@ -125,16 +134,16 @@ pub async fn sd_logger_task(
 
         match frame {
             LogEvent::Mag(mag_data) => {
-                write_buffered!(mag_data, mag_buf, mag_filename);
+                write_buffered!(mag_data, mag_buf, &mag_filename);
             }
             LogEvent::GPS(gps_data) => {
-                write_buffered!(gps_data, gps_buf, gps_filename);
+                write_buffered!(gps_data, gps_buf, &gps_filename);
             }
             LogEvent::Imu(imu_data) => {
-                write_buffered!(imu_data, imu_buf, imu_filename);
+                write_buffered!(imu_data, imu_buf, &imu_filename);
             }
             LogEvent::Baro(baro_data) => {
-                write_buffered!(baro_data, baro_buf, baro_filename);
+                write_buffered!(baro_data, baro_buf, &baro_filename);
             }
         }
     }
