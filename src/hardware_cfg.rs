@@ -11,6 +11,10 @@ use embassy_stm32::spi::{Config as SpiConfig, Spi};
 use embassy_stm32::usart::{Config as UsartConfig, Uart};
 use embassy_stm32::{Config, bind_interrupts, peripherals, sdmmc, usart};
 // TODO: sdmmc.rs or something, this is messy
+// it is indeed messy... there is no fatfs support for the async sdmmc implemented by embassy_stm32
+// there is a blocking version that supports fatfs! embedded-sdmmc. last time i saw, async support was WIP
+// because of duplicate code (blocking and async).
+// AeroRust is working on a simple data storage protocol!
 
 //NVIC and DMA
 bind_interrupts!(struct Irqs {

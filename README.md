@@ -57,3 +57,29 @@ Rust was chosen also because of being easy to deploy testing and mocks, to see h
 - [x] Store IMU and Altimeter data in the SD Card.
 
 - [ ] Lora Comms  to the GS and think of  a better protocol(TBT)
+
+# VSCode extensions
+
+- [Rust](https://marketplace.visualstudio.com/vscode/item?itemName=rust-lang.rust) (official Rust extension for syntax highlighting and basic support)
+- [Rust Analyzer](https://marketplace.visualstudio.com/items?itemName=matklad.rust-analyzer)  (for code completion, inline documentation, and error checking)
+- [Even Better TOML](https://marketplace.visualstudio.com/vscode/item?itemName=tamasfe.even-better-toml)  (for editing Cargo.toml files)
+- [CodeLLDB](https://marketplace.visualstudio.com/items?itemName=vadimcn.vscode-lldb)  (for debugging Rust code with LLDB)
+- [Error Lens](https://marketplace.visualstudio.com/items?itemName=usernamehw.errorlens)  (to highlight Rust compiler errors directly in the code)
+- [Crate Graph](https://marketplace.visualstudio.com/items?itemName=alexdima.crate-graph)  (to visualize the dependency graph of Rust crates in the project)
+- [Debugger for probe-rs](https://marketplace.visualstudio.com/vscode/item?itemName=probe-rs.probe-rs-debugger) (for debugging embedded Rust code with probe-rs)
+- [Dependi](https://marketplace.visualstudio.com/vscode/item?itemName=fill-labs.dependi) (for visualizing and managing Rust dependencies in Cargo.toml)
+- [Path Intellisense](https://marketplace.visualstudio.com/vscode/item?itemName=christian-kohler.path-intellisense) (for autocompleting file paths in Rust code)
+- [Serial Monitor](https://marketplace.visualstudio.com/vscode/item?itemName=ms-vscode.vscode-serial-monitor) (for monitoring serial output from embedded Rust applications)
+
+# crates (to install)
+
+- bacon
+- cargo-binstall
+- cargo-nextest
+- coreutils
+
+- use clippy!
+
+- unwrap might be okay for startup. its easier to deal with than error handling. during routines / loops, it should use error handling with logging, ideally telemtetry too. But if not, expect is a good middle ground, which panics with error mesages!
+
+- for drivers crates, see https://vaishnav.world/Hayasen/
