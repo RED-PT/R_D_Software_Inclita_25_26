@@ -1,7 +1,7 @@
-use core::cell::RefCell;
 use defmt::Format;
-use embassy_sync::blocking_mutex::{Mutex, raw::ThreadModeRawMutex};
+use embassy_sync::blocking_mutex::raw::ThreadModeRawMutex;
 use embassy_sync::channel::Channel;
+use embassy_sync::mutex::Mutex;
 use serde::Serialize;
 
 ///Magnetometer data structure
@@ -181,20 +181,13 @@ pub struct DownlinkPacket {
     pub gps: Option<GnggaMessage>,
 }
 
-// why not making the DownlinkPacket an enum?
-pub enum DownlinkEvent {
-    Imu(ImuData),
-    Baro(AltimeterData),
-    GPS(GnggaMessage),
-}
-
 // A global, thread-safe variable to hold the latest state
 // INFO: We use RefCell cause, in a no std environment, Mutex does not implement interior mutablity
-// embassy_sync has signal. it seems more appropriate here! all my homies hate RefCell in no_std! use embassy_sync instead! theres always a sync primitive there you can use! 
+// embassy_sync has signal. it seems more appropriate here! all my homies hate RefCell in no_std! use embassy_sync instead! theres always a sync primitive there you can use!
 // plus it has async support, so you can await on it!
-pub static LATEST_TELEMETRY: Mutex<ThreadModeRawMutex, RefCell<DownlinkPacket>> =
-    Mutex::new(RefCell::new(DownlinkPacket {
+pub static LATEST_TELEMETRY: Mutex<ThreadModeRawMutex, DownlinkPacket> =
+    Mutex::new(DownlinkPacket {
         imu: None,
         baro: None,
         gps: None,
-    }));
+    });

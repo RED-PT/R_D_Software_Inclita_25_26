@@ -23,13 +23,13 @@ impl TimeSource for DummyTimesource {
         }
     }
 }
-
+const BLOCK_SIZE: usize = 512;
 // do you really need these limits? it seems to be a bit too much, 6 volumes!?
 // struct size:
 // files - 24 * 4
 // dirs  - 3 * 4
 // volum - 16 * 6
-type MyVolumeManager<D, T> = VolumeManager<D, T, 4, 4, 6>;
+type MyVolumeManager<D, T> = VolumeManager<D, T, 10, 1, 1>;
 
 #[embassy_executor::task]
 pub async fn sd_logger_task(
@@ -37,7 +37,15 @@ pub async fn sd_logger_task(
     cs_pin: Output<'static>,
 ) {
     info!("Initializing Binary SD Card Logger...");
-    let spi_device = ExclusiveDevice::new(spi_bus, cs_pin, Delay).unwrap();
+
+    let spi_device = match ExclusiveDevice::new(spi_bus, cs_pin, Delay) {
+        Ok(device) => device,
+        Err(_) => {
+            error!("Failed to initialize SPI ExclusiveDevice for SD card");
+
+            return;
+        }
+    };
     let sdcard = SdCard::new(spi_device, Delay);
 
     // Initialize the card and open volume
@@ -53,7 +61,13 @@ pub async fn sd_logger_task(
     }
 
     let volume_mgr = MyVolumeManager::new_with_limits(sdcard, DummyTimesource, 1);
-    let volume0 = volume_mgr.open_volume(VolumeIdx(0)).unwrap();
+    let volume0 = match volume_mgr.open_volume(VolumeIdx(0)) {
+        Ok(volume) => volume,
+        Err(_) => {
+            error!("Failed to Open Volume");
+            return;
+        }
+    };
     let mut root_dir = volume0.open_root_dir().unwrap();
 
     // 1. Find the next available run/session number
@@ -82,10 +96,10 @@ pub async fn sd_logger_task(
     write!(mag_filename, "MAG_{}", run_num).unwrap();
 
     // This allows us to hold several readings before bothering the SD card.
-    let mut imu_buf: Vec<u8, 512> = Vec::new(); // 512 used because of sd card block size? if so, nice. but having hardwritten values is bad practice, maybe make it a const. const are zero-cost! 
-    let mut baro_buf: Vec<u8, 512> = Vec::new();
-    let mut gps_buf: Vec<u8, 512> = Vec::new();
-    let mut mag_buf: Vec<u8, 512> = Vec::new();
+    let mut imu_buf: Vec<u8, BLOCK_SIZE> = Vec::new(); // 512 used because of sd card block size? if so, nice. but having hardwritten values is bad practice, maybe make it a const. const are zero-cost! 
+    let mut baro_buf: Vec<u8, BLOCK_SIZE> = Vec::new();
+    let mut gps_buf: Vec<u8, BLOCK_SIZE> = Vec::new();
+    let mut mag_buf: Vec<u8, BLOCK_SIZE> = Vec::new();
 
     // A small temporary array just for serializing a single event
     let mut temp_encode_buf = [0u8; 64];
@@ -106,13 +120,13 @@ pub async fn sd_logger_task(
                         Ok(file) => {
                             // 2. WRITE the whole chunk at once
                             if let Err(e) = file.write(&$buffer) {
-                                error!("Write Failed on {}: {:?}", $filename, e); 
-                                // using filename.as_str() here is bad practice! string should only be pased if mutated. 
-                                // if not, u can pass &str instead, which can be created through differnet str implementations, including heapless String and &'static str literals. 
+                                error!("Write Failed on {}: {:?}", $filename, e);
+                                // using filename.as_str() here is bad practice! string should only be pased if mutated.
+                                // if not, u can pass &str instead, which can be created through differnet str implementations, including heapless String and &'static str literals.
                             }
                             // 3. CLOSE the file (This releases the mutable borrow on root_dir!)
-                            // file.close().unwrap_or_default(); // bad practice! 
-                            _ = file.close(); // this shuold be used instead, as it explicitly states the returned value is ignored. 
+                            // file.close().unwrap_or_default(); // bad practice!
+                            _ = file.close(); // this shuold be used instead, as it explicitly states the returned value is ignored.
                             // use .unwrap_or_default() only when you want to handle the error by using a default value, not when you want to ignore it.
                         }
                         Err(e) => error!("Failed to open {} for flushing: {:?}", $filename, e),

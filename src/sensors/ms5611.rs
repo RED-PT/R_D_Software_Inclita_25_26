@@ -14,7 +14,13 @@ pub async fn ms5611_task(
 ) {
     info!("Starting MS5607 Altimeter Task (50Hz)...");
 
-    let spi_device = ExclusiveDevice::new(spi_bus, cs_pin, Delay).unwrap();
+    let spi_device = match ExclusiveDevice::new(spi_bus, cs_pin, Delay) {
+        Ok(device) => device,
+        Err(_) => {
+            error!("Failed to initialize SPI ExclusiveDevice for  Altimeter");
+            return;
+        }
+    };
     let mut sensor = Ms5611::new_spi(spi_device);
     let mut delay = Delay;
 
@@ -42,9 +48,10 @@ pub async fn ms5611_task(
                 info!("{:?}", data);
                 // Wrap it and send it!
                 DATA_CHANNEL.send(LogEvent::Baro(data.clone())).await;
-                LATEST_TELEMETRY.lock(|t| {
-                    t.borrow_mut().baro = Some(data.into());
-                });
+                {
+                    let mut guard = LATEST_TELEMETRY.lock().await;
+                    guard.baro = Some(data.into());
+                }
             }
             Err(_) => error!("MS5607 read failed!"),
         }

@@ -46,8 +46,10 @@ pub async fn lora_task(
     let mut ticker = Ticker::every(Duration::from_hz(5));
 
     loop {
-        // 1. Grab a snapshot of the latest data instantly
-        let packet = data::LATEST_TELEMETRY.lock(|t| t.borrow().clone());
+        let packet = {
+            let guard = data::LATEST_TELEMETRY.lock().await;
+            guard.clone()
+        }; // Guard goes out of scope here, freeing the lock for the sensors!
 
         // 2. Serialize to bytes
         if let Ok(payload_len) = postcard::to_slice(&packet, &mut tx_buffer).map(|b| b.len()) {

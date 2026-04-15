@@ -59,9 +59,11 @@ async fn parse_and_send_gngga(line: &str) {
         };
 
         DATA_CHANNEL.send(LogEvent::GPS(data.clone())).await;
-        LATEST_TELEMETRY.lock(|t| {
-            t.borrow_mut().gps = Some(data.into());
-        });
+        {
+            let mut guard = LATEST_TELEMETRY.lock().await;
+
+            guard.gps = Some(data.into());
+        }
     } else {
         warn!("GPS: Waiting for Satellites (No Fix)");
     }
@@ -74,9 +76,9 @@ fn nmea_to_decimal(raw: &str, direction: &str) -> f64 {
         Err(_) => return 0.0, // If parsing fails, return 0.0
     };
 
-    // should be: if parsing fails, return none! 
-    // ideally, it should use .parse() / .try_parse() function! its most ideomatic do to it this way! 
-    // great blogs! https://www.howtocodeit.com/guides; you should read their NewTypes guide: 
+    // should be: if parsing fails, return none!
+    // ideally, it should use .parse() / .try_parse() function! its most ideomatic do to it this way!
+    // great blogs! https://www.howtocodeit.com/guides; you should read their NewTypes guide:
     // https://www.howtocodeit.com/guides/ultimate-guide-rust-newtypes
 
     // Extract Degrees (DD) and Minutes (MM.MMMM)
@@ -98,9 +100,18 @@ fn parse_utc_time(raw: &str) -> UtcTime {
     // If the string is empty or corrupted, return zeros
 
     // Slice the string by index: HH(0..2) MM(2..4) SS.SS(4..)
-    let hours = raw.get(0..2).and_then(|c| c.parse::<u8>().ok()).unwrap_or(0);
-    let minutes = raw.get(2..4).and_then(|c| c.parse::<u8>().ok()).unwrap_or(0);
-    let seconds = raw.get(4..).and_then(|c| c.parse::<f32>().ok()).unwrap_or(0.0);
+    let hours = raw
+        .get(0..2)
+        .and_then(|c| c.parse::<u8>().ok())
+        .unwrap_or(0);
+    let minutes = raw
+        .get(2..4)
+        .and_then(|c| c.parse::<u8>().ok())
+        .unwrap_or(0);
+    let seconds = raw
+        .get(4..)
+        .and_then(|c| c.parse::<f32>().ok())
+        .unwrap_or(0.0);
 
     UtcTime {
         hours,

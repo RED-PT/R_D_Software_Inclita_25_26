@@ -82,11 +82,11 @@ pub async fn bno055_logger_task(i2c_bus: I2c<'static, Blocking, embassy_stm32::i
         info!("{:?}", data);
         // Send to the SD Card
         DATA_CHANNEL.send(LogEvent::Imu(data.clone())).await;
+        {
+            let mut guard = LATEST_TELEMETRY.lock().await;
 
-        LATEST_TELEMETRY.lock(|t| {
-            t.borrow_mut().imu = Some(data.into());
-        });
-
+            guard.imu = Some(data.into());
+        }
         // Yield back to embassy
         ticker.next().await;
     }
