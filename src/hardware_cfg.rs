@@ -30,6 +30,7 @@ pub struct Board<'a> {
     // I2C expects <Lifetime, Mode, MasterMode>
     pub imu: I2c<'a, Blocking, embassy_stm32::i2c::Master>, // this will prolly work in blocking,
     // as of now were using bno
+    pub accel: I2c<'a, Blocking, embassy_stm32::i2c::Master>,
     pub gps_uart: Uart<'a, Async>,
     // SPI expects <Lifetime, Mode, CommunicationMode>
     pub altimeter: Spi<'a, Async, embassy_stm32::spi::mode::Master>, //prollly will keep in
@@ -93,6 +94,7 @@ impl Board<'static> {
         // GYRO I2C
         let i2c_cfg = I2cConfig::default();
         let imu = I2c::new_blocking(p.I2C1, p.PB6, p.PB7, i2c_cfg);
+        let accel = I2c::new_blocking(p.I2C3, p.PA8, p.PB4, i2c_cfg);
 
         // Altimeter SPI
         let spi_cfg = SpiConfig::default();
@@ -138,6 +140,7 @@ impl Board<'static> {
             led_mcu_on,
             led_other_function,
             imu,
+            accel,
             gps_uart,
             altimeter,
             altimeter_cs,

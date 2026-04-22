@@ -30,6 +30,15 @@ pub struct ImuData {
     pub lin_accel_d: f32,
     pub timestamp_ms: u32,
 }
+
+#[derive(Format, Serialize, Clone)]
+pub struct AccelData {
+    pub raw_x: i16,
+    pub raw_y: i16,
+    pub raw_z: i16,
+    pub timestamp_ms: u32,
+}
+
 #[derive(Format, Serialize, Clone)]
 pub struct AltimeterData {
     pub pressure: f32,
@@ -99,6 +108,7 @@ pub enum LogEvent {
     Baro(AltimeterData),
     GPS(GnggaMessage),
     Mag(MagnetometerData),
+    ACCEL(AccelData),
 }
 //The Channel (Our FreeRTOS StreamBuffer equivalent)
 // the channel can hold up to 25 readings before the mock feeder has to wait.

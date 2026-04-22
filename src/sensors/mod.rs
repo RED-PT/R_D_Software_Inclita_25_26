@@ -1,3 +1,4 @@
+pub mod adxl345;
 pub mod bno055;
 pub mod gps;
 pub mod mock;

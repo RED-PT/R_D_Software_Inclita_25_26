@@ -89,17 +89,20 @@ pub async fn sd_logger_task(
     let mut baro_filename: String<32> = String::new();
     let mut gps_filename: String<32> = String::new();
     let mut mag_filename: String<32> = String::new();
+    let mut accel_filename: String<32> = String::new();
 
     write!(imu_filename, "IMU_{}", run_num).unwrap(); // use format! instead! 
     write!(baro_filename, "BARO_{}", run_num).unwrap();
     write!(gps_filename, "GPS_{}", run_num).unwrap();
     write!(mag_filename, "MAG_{}", run_num).unwrap();
+    write!(accel_filename, "ACCEL_{}", run_num).unwrap();
 
     // This allows us to hold several readings before bothering the SD card.
     let mut imu_buf: Vec<u8, BLOCK_SIZE> = Vec::new(); // 512 used because of sd card block size? if so, nice. but having hardwritten values is bad practice, maybe make it a const. const are zero-cost! 
     let mut baro_buf: Vec<u8, BLOCK_SIZE> = Vec::new();
     let mut gps_buf: Vec<u8, BLOCK_SIZE> = Vec::new();
     let mut mag_buf: Vec<u8, BLOCK_SIZE> = Vec::new();
+    let mut accel_buf: Vec<u8, BLOCK_SIZE> = Vec::new();
 
     // A small temporary array just for serializing a single event
     let mut temp_encode_buf = [0u8; 64];
@@ -158,6 +161,9 @@ pub async fn sd_logger_task(
             }
             LogEvent::Baro(baro_data) => {
                 write_buffered!(baro_data, baro_buf, &baro_filename);
+            }
+            LogEvent::ACCEL(accel_data) => {
+                write_buffered!(accel_data, accel_buf, &accel_filename);
             }
         }
     }
