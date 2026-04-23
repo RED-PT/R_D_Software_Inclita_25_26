@@ -54,6 +54,7 @@ heapless = { version = "0.8", features = ["defmt-03", "serde"] }
 bno055 = { version = "0.4.0", features = ["defmt-03"] }
 ms5611-rs = "0.1.1"
 sx127x_lora = { version = "0.3.1", default-features = false }
+adxl343 = "0.8.0"
 [profile.dev]
 # Optimize for size even in debug builds
 opt-level = "s"
@@ -67,7 +68,7 @@ codegen-units = 1
 lto = true
 opt-level = "z"
 strip = true
-debug = 2         # Keep debug symbols so defmt still works in release mode!
+debug = 1         # Keep debug symbols so defmt still works in release mode!
 panic = "abort"   # Removes stack-unwinding code (crucial for no_std)
 
 [features]

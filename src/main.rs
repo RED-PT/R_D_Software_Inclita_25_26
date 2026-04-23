@@ -42,12 +42,15 @@ async fn main(spawner: Spawner) {
             ))
             .unwrap();
         spawner
-            .spawn(telemetry::lora::lora_task(
-                board.lora_spi,
-                board.lora_cs,
-                board.lora_reset,
-            ))
+            .spawn(sensors::adxl345::adxl343_task(board.accel))
             .unwrap();
+        //spawner
+        //.spawn(telemetry::lora::lora_task(
+        //board.lora_spi,
+        //board.lora_cs,
+        //  board.lora_reset,
+        //))
+        //.unwrap();
     }
 
     // --- TEST MODE: Mock Sensors ---

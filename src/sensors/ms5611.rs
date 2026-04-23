@@ -45,7 +45,7 @@ pub async fn ms5611_task(
                     temperature: measurement.temperature_c,
                     altitude: 0.0,
                 };
-                info!("{:?}", data);
+                info!(" MS {:?}", data);
                 // Wrap it and send it!
                 DATA_CHANNEL.send(LogEvent::Baro(data.clone())).await;
                 {

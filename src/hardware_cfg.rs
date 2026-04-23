@@ -94,13 +94,19 @@ impl Board<'static> {
         // GYRO I2C
         let i2c_cfg = I2cConfig::default();
         let imu = I2c::new_blocking(p.I2C1, p.PB6, p.PB7, i2c_cfg);
-        let accel = I2c::new_blocking(p.I2C3, p.PA8, p.PB4, i2c_cfg);
 
-        // Altimeter SPI
-        let spi_cfg = SpiConfig::default();
+        let mut i2c_config_pulls = I2cConfig::default();
+
+        // 2. Enable the internal pull-up resistors!
+        i2c_config_pulls.sda_pullup = true;
+        i2c_config_pulls.scl_pullup = true;
+        let accel = I2c::new_blocking(p.I2C3, p.PA8, p.PB4, i2c_config_pulls);
+
+        let mut spi_cfg = SpiConfig::default();
         let altimeter = Spi::new(
             p.SPI2, p.PB13, p.PC1, p.PC2, p.DMA1_CH4, p.DMA1_CH3, spi_cfg,
         );
+
         let altimeter_cs = Output::new(p.PA0, Level::High, Speed::High); //initalized
         //to high -> MS inactive
 
