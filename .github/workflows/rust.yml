@@ -2,32 +2,64 @@ name: Rust
 
 on:
   push:
-    branches: [ "master" ]
+    branches: ["master"]
   pull_request:
-    branches: [ "master" ]
+    branches: ["master"]
 
 env:
   CARGO_TERM_COLOR: always
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v4
-    # This is the magic step for embedded Rust!
+      - uses: actions/checkout@v4
+      # This is the magic step for embedded Rust!
       # It installs the compiler and the specific architecture target for your STM32.
-    - name: Install Rust Toolchain
-      uses: dtolnay/rust-toolchain@stable
-      with:
-        targets: thumbv7em-none-eabihf 
+      - name: Install Rust Toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: thumbv7em-none-eabihf
 
-      # Caching speeds up your workflow by saving downloaded crates between runs
-    - name: Setup Rust Cache
-      uses: Swatinem/rust-cache@v2
+        # Caching speeds up your workflow by saving downloaded crates between runs
+      - name: Setup Rust Cache
+        uses: Swatinem/rust-cache@v2
 
-      # The actual build command.
-      # If you have a .cargo/config.toml setting your default target, this is all you need!
-    - name: Check Build (Release)
-      run: cargo build --release
+        # The actual build command.
+        # If you have a .cargo/config.toml setting your default target, this is all you need!
+      - name: Check Build (Release)
+        run: cargo build --release
+
+        # --- STEPS FOR DOCUMENTATION ---
+
+      - name: Generate Rustdocs
+        # --no-deps prevents building docs for all 300+ of your dependencies
+        # --document-private-items ensures your internal fns/structs are documented too
+        run: cargo doc --release --no-deps --document-private-items --target thumbv7em-none-eabihf
+
+      - name: Add redirect to root index.html
+        # CHANGE "your_crate_name" below to the name in your Cargo.toml!
+        # Note: If your crate name has hyphens (my-cool-project), change them to underscores (my_cool_project) here.
+        run: echo '<meta http-equiv="refresh" content="0; url=your_crate_name/index.html">' > target/thumbv7em-none-eabihf/doc/index.html
+
+      - name: Upload GitHub Pages artifact
+        # We only want to upload new docs when pushing to master, not during a PR check.
+        if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: target/thumbv7em-none-eabihf/doc
+
+  # --- NEW DEPLOYMENT JOB ---
+  deploy-docs:
+    # This job waits for the build job to finish and only runs on the master branch
+    needs: build
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

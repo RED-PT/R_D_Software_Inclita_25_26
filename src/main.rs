@@ -45,12 +45,15 @@ async fn main(spawner: Spawner) {
             .spawn(sensors::adxl345::adxl343_task(board.accel))
             .unwrap();
         //spawner
-        //.spawn(telemetry::lora::lora_task(
-        //board.lora_spi,
-        //board.lora_cs,
-        //  board.lora_reset,
+        //  .spawn(telemetry::lora::lora_task(
+        //    board.lora_spi,
+        //  board.lora_cs,
+        //board.lora_reset,
         //))
-        //.unwrap();
+        // .unwrap();
+        spawner
+            .spawn(sensors::gps::gps_task(board.gps_uart))
+            .unwrap();
     }
 
     // --- TEST MODE: Mock Sensors ---

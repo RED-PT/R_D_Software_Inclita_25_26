@@ -33,9 +33,9 @@ pub struct ImuData {
 
 #[derive(Format, Serialize, Clone)]
 pub struct AccelData {
-    pub raw_x: i16,
-    pub raw_y: i16,
-    pub raw_z: i16,
+    pub raw_x: f32,
+    pub raw_y: f32,
+    pub raw_z: f32,
     pub timestamp_ms: u32,
 }
 

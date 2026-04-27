@@ -29,7 +29,7 @@ const BLOCK_SIZE: usize = 512;
 // files - 24 * 4
 // dirs  - 3 * 4
 // volum - 16 * 6
-type MyVolumeManager<D, T> = VolumeManager<D, T, 10, 1, 1>;
+type MyVolumeManager<D, T> = VolumeManager<D, T, 1, 10, 1>;
 
 #[embassy_executor::task]
 pub async fn sd_logger_task(

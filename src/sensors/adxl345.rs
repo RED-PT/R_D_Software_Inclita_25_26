@@ -1,56 +1,58 @@
 use crate::telemetry::data::{AccelData, DATA_CHANNEL, LATEST_TELEMETRY, LogEvent};
-use adxl343::Adxl343;
-use adxl343::accelerometer::RawAccelerometer; // Required trait to access .accel_raw()
 use defmt::{error, info};
 use embassy_stm32::i2c::I2c;
 use embassy_stm32::mode::Blocking;
 use embassy_time::{Duration, Ticker};
+use lh_adxl345 as adxl; // Brings in the .accel_raw() method
 
 #[embassy_executor::task]
 pub async fn adxl343_task(i2c: I2c<'static, Blocking, embassy_stm32::i2c::Master>) {
-    info!("Initializing ADXL343 via adxl343 crate...");
+    info!("Initializing ADXL345 via lh-adxl345 crate at 0x1D...");
 
-    // 1. Pass the blocking I2C bus into the crate
-    let mut accelerometer = match Adxl343::new(i2c) {
-        Ok(accel) => accel,
-        Err(_) => {
-            error!("Failed to initialize ADXL343 crate!");
-            return;
-        }
+    // 1. Wrap the Embassy I2C bus in the crate's I2C struct
+    // This is where we solve the SDO pull-up address issue!
+    let adxl_bus = adxl::AdxlBusI2c {
+        i2c,
+        addr: 0x1D, // Your custom address because SDO is pulled HIGH
     };
+
+    // 2. Initialize the device
+    let mut accelerometer = adxl::Adxl345::new(adxl_bus);
+
+    // 3. Write default configurations (Measurement mode, standard ranges, etc.)
+    if let Err(_) = accelerometer.init_defaults() {
+        error!("Failed to initialize lh-adxl345 crate! Check wiring.");
+        return;
+    }
 
     // Set task to run at 20Hz (every 50ms)
     let mut ticker = Ticker::every(Duration::from_millis(50));
 
     loop {
-        // 2. Read the raw acceleration
-        // This is a BLOCKING call. The CPU will wait right here until the I2C
-        // transaction is finished, but Embassy handles this gracefully.
-        match accelerometer.accel_raw() {
-            Ok(accel_vec) => {
-                // The crate returns a vector struct with x, y, z fields.
-                // We keep them as raw i16 integers for maximum LoRa efficiency!
+        // 4. Read the raw acceleration via the accelerometer trait
+        // This blocks the CPU just long enough to pull the 6 bytes over I2C.
+        match accelerometer.read_axis() {
+            Ok((x, y, z)) => {
                 let accel_data = AccelData {
-                    raw_x: accel_vec.x,
-                    raw_y: accel_vec.y,
-                    raw_z: accel_vec.z,
+                    raw_x: x,
+                    raw_y: y,
+                    raw_z: z,
                     timestamp_ms: embassy_time::Instant::now().as_millis() as u32,
                 };
-                info!("{:?}", accel_data);
 
-                // 3. Update global telemetry mutex
+                // Update the global telemetry Mutex
                 {
                     let mut guard = LATEST_TELEMETRY.lock().await;
                     //guard.accel = Some(accel_data.clone());
                 }
 
-                // 4. Send to SD Card via the channel
-                //let _ = DATA_CHANNEL.send(LogEvent::Accel(accel_data)).await;
+                // Send to the SD Card logger
+                // let _ = DATA_CHANNEL.send(LogEvent::Accel(accel_data)).await;
             }
-            Err(_) => error!("Failed to read from ADXL343 crate"),
+            Err(_) => error!("Failed to read axis from lh-adxl345 crate"),
         }
 
-        // 5. Yield back to the executor so your LoRa and GPS tasks can run!
+        // 7. Yield back to the Embassy executor
         ticker.next().await;
     }
 }

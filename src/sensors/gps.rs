@@ -1,7 +1,7 @@
 use crate::telemetry::data::{
     DATA_CHANNEL, GnggaMessage, GpsFix, LATEST_TELEMETRY, LogEvent, UtcTime,
 };
-use defmt::{error, warn};
+use defmt::{error, info, warn};
 use embassy_stm32::usart::Uart;
 
 #[embassy_executor::task]
@@ -57,6 +57,7 @@ async fn parse_and_send_gngga(line: &str) {
             fix: current_fix,
             timestamp_ms: embassy_time::Instant::now().as_millis() as u32,
         };
+        info!("GPS {:?}", data);
 
         DATA_CHANNEL.send(LogEvent::GPS(data.clone())).await;
         {
