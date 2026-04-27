@@ -41,7 +41,7 @@ jobs:
       - name: Add redirect to root index.html
         # CHANGE "your_crate_name" below to the name in your Cargo.toml!
         # Note: If your crate name has hyphens (my-cool-project), change them to underscores (my_cool_project) here.
-        run: echo '<meta http-equiv="refresh" content="0; url=your_crate_name/index.html">' > target/thumbv7em-none-eabihf/doc/index.html
+        run: echo '<meta http-equiv="refresh" content="0; url=R_D_Software_Inclita_25_26/index.html">' > target/thumbv7em-none-eabihf/doc/index.html
 
       - name: Upload GitHub Pages artifact
         # We only want to upload new docs when pushing to master, not during a PR check.
