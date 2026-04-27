@@ -56,6 +56,11 @@ jobs:
     needs: build
     if: github.event_name == 'push' && github.ref == 'refs/heads/master'
     runs-on: ubuntu-latest
+
+    # ADD THIS BLOCK RIGHT HERE:
+    permissions:
+      pages: write # Required to deploy to Pages
+      id-token: write # Required for GitHub's OIDC authentication
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
