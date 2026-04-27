@@ -20,6 +20,8 @@ Rust was chosen also because of being easy to deploy testing and mocks, to see h
 
 - File Generation: Scans the SD card on boot and creates sequential, non-destructive log files (e.g., DATA1.BIN, DATA2.BIN).
 
+Documentation generated using Cargo Docs deployed at [API Documentation](https://red-pt.github.io/R_D_Software_Inclita_25_26/r_d_inclita_sofware/index.html)
+
 ## Project Structure (as of now)
 
 ```
